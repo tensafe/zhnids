@@ -15,22 +15,22 @@ using namespace std;
 
 namespace xzh
 {
-	typedef pcap_hub_impl<string, bool (tcp_queue_node_ptr)> tcp_retrans_hub;
+	typedef pcap_hub_impl<string, bool (tcp_packet_node_ptr)> tcp_repacket_hub;
 
 	class tcp_queue
 	{
 	public:
-		typedef map<unsigned int, tcp_queue_node_ptr> map_tcp_queue_data;
+		typedef map<unsigned int, tcp_packet_node_ptr> map_tcp_queue_data;
 	public:
-		explicit tcp_queue(tcp_retrans_hub& _tcp_retrans_hub)
+		explicit tcp_queue(tcp_repacket_hub& _tcp_retrans_hub)
 			:seq_next_s(0),
 			seq_next_r(0),
-			tcp_retrans_hub_(_tcp_retrans_hub)
+			tcp_repacket_hub_(_tcp_retrans_hub)
 		{
 
 		}
 	public:
-		bool add(tcp_queue_node_ptr tcp_node_ptr)
+		bool add(tcp_packet_node_ptr tcp_node_ptr)
 		{
 			bool bretvalue = false;
 
@@ -80,7 +80,7 @@ namespace xzh
 										//直接从MAP中移除
 										do 
 										{
-											tcp_queue_node_ptr l_tcp_node_ptr = pos->second;
+											tcp_packet_node_ptr l_tcp_node_ptr = pos->second;
 											if (seq_next_s >= pos->first + l_tcp_node_ptr->getdatalen())
 											{
 												break;
@@ -106,7 +106,7 @@ namespace xzh
 									{
 										debughelp::safe_debugstr(200, "in list [%x] = want: [%x]", pos->first, seq_next_s);
 										//更新next_seq..
-										tcp_queue_node_ptr l_node_ptr = pos->second;
+										tcp_packet_node_ptr l_node_ptr = pos->second;
 										seq_next_s = seq_next_s + l_node_ptr->getdatalen();
 										//回调数据,从map中移除
 										//todo:
@@ -191,7 +191,7 @@ namespace xzh
 										//直接从MAP中移除
 										do 
 										{
-											tcp_queue_node_ptr l_tcp_node_ptr = pos->second;
+											tcp_packet_node_ptr l_tcp_node_ptr = pos->second;
 											if (seq_next_r >= pos->first + l_tcp_node_ptr->getdatalen())
 											{
 												break;
@@ -218,7 +218,7 @@ namespace xzh
 									{
 										debughelp::safe_debugstr(200, "r in list [%x] = want: [%x]", pos->first, seq_next_r);
 										//更新next_seq..
-										tcp_queue_node_ptr l_node_ptr = pos->second;
+										tcp_packet_node_ptr l_node_ptr = pos->second;
 										seq_next_r = seq_next_r + l_node_ptr->getdatalen();
 										//回调数据,从map中移除
 										//call next data...
@@ -291,19 +291,19 @@ namespace xzh
 			return bretvalue;
 		}
 
-		bool notify_tcppacket(tcp_queue_node_ptr tcp_queue_node_ptr_)
+		bool notify_tcppacket(tcp_packet_node_ptr tcp_packet_ptr_)
 		{
 			bool bretvalue = false;
 
-			for (size_t index_ = 0; index_ < tcp_retrans_hub_.size(); index_ ++)
+			for (size_t index_ = 0; index_ < tcp_repacket_hub_.size(); index_ ++)
 			{
-				tcp_retrans_hub::return_type_ptr temp_ = tcp_retrans_hub_[index_];
+				tcp_repacket_hub::return_type_ptr temp_ = tcp_repacket_hub_[index_];
 				if (!temp_)
 				{
 					continue;
 				}
 
-				if((*temp_)(tcp_queue_node_ptr_))
+				if((*temp_)(tcp_packet_ptr_))
 				{
 				}
 				else
@@ -321,7 +321,7 @@ namespace xzh
 		unsigned int seq_next_s;
 		unsigned int seq_next_r;
 
-		tcp_retrans_hub	&tcp_retrans_hub_;
+		tcp_repacket_hub	&tcp_repacket_hub_;
 	};
 
 
@@ -330,13 +330,13 @@ namespace xzh
 	public:
 		typedef map_ptr_manager<int, tcp_queue> tcp_queue_mn;
 	public:
-		explicit tcp_queue_manager(tcp_retrans_hub &_tcp_retrans_hub)
+		explicit tcp_queue_manager(tcp_repacket_hub &_tcp_retrans_hub)
 			:tcp_retrans_hub_(_tcp_retrans_hub)
 		{
 
 		}
 	public:
-		bool dispatch(tcp_queue_node_ptr tcp_queue_node_)
+		bool dispatch(tcp_packet_node_ptr tcp_queue_node_)
 		{
 			bool bretvalue = false;
 
@@ -380,7 +380,7 @@ namespace xzh
 		}
 
 	private:
-		bool innser_add(tcp_queue_node_ptr tcp_queue_node_)
+		bool innser_add(tcp_packet_node_ptr tcp_queue_node_)
 		{
 			bool bretvalue = false;
 
@@ -412,7 +412,7 @@ namespace xzh
 		}
 	private:
 		tcp_queue_mn tcp_queue_mn_;
-		tcp_retrans_hub &tcp_retrans_hub_;
+		tcp_repacket_hub &tcp_retrans_hub_;
 	};
 
 	typedef boost::shared_ptr<tcp_queue_manager> tcp_queue_manager_ptr;
@@ -422,7 +422,7 @@ namespace xzh
 	{
 	public:
 		template <typename TFun>
-		bool add_retrans_handler(string key_, TFun callfun_)
+		bool add_repacket_handler(string key_, TFun callfun_)
 		{
 			return tcp_retrans_hub_.add_handler(key_, callfun_);
 		}
@@ -435,7 +435,7 @@ namespace xzh
 		{
 
 		}
-		bool retrans_handler(tcp_queue_node_ptr tcp_queue_node_ptr_)
+		bool repacket_handler(tcp_packet_node_ptr tcp_queue_node_ptr_)
 		{
 			bool bretvalue = false;
 
@@ -466,7 +466,7 @@ namespace xzh
 			return bretvalue;
 		}
 	private:
-		tcp_retrans_hub tcp_retrans_hub_;
+		tcp_repacket_hub tcp_retrans_hub_;
 		tcp_queue_manager_ptr tcp_queue_mn_ptr;
 	};
 };

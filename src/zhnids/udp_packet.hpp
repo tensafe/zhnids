@@ -6,11 +6,14 @@
 
 #include <zhnids/packet_header.hpp> 
 #include <zhnids/stage/outdebug.hpp> 
+#include <zhnids/stage/pcap_hub.hpp>
 
 using namespace std;
 
 namespace xzh
 {
+	typedef pcap_hub_impl<string, bool (udp_packet_node_ptr)> udp_repacket_hub;
+
 	class udppacket
 	{
 	public:
@@ -22,6 +25,13 @@ namespace xzh
 			u_char protocol;    
 			u_short len;        
 		};
+	public:
+		template <typename TFun>
+		bool add_repacket_handler(string key_, TFun callfun_)
+		{
+			return udp_repacket_hub_.add_handler(key_, callfun_);
+		}
+
 	public:
 		bool udp_handler(vector<unsigned char> &data_, int len, string &devname_)
 		{
@@ -49,23 +59,54 @@ namespace xzh
 					}
 				}
 
-				//ip id
-				u_short ip_id = ntohs(iphdr_->ip_id);
-				//ip
-				u_int isrc_ip = ntohl(iphdr_->ip_src.S_un.S_addr);
-				u_int idst_ip = ntohl(iphdr_->ip_dst.S_un.S_addr);
-				//port
-				u_short isrc_port = ntohs(udphdr_->uh_sport);
-				u_short idst_port = ntohs(udphdr_->uh_dport);
+				if (udp_repacket_hub_.size() <= 0)
+				{
+					break;
+				}
+				
+				udp_packet_node_ptr l_udp_packet_ptr_ = udp_packet_node_ptr(new udp_packet_node(
+					ntohl(iphdr_->ip_src.S_un.S_addr),
+					ntohl(iphdr_->ip_dst.S_un.S_addr),
+					ntohs(udphdr_->uh_sport),
+					ntohs(udphdr_->uh_dport),
+					false,
+					uudp_len));
 
-				vector<unsigned char> udp_data;
-				std::copy((unsigned char*)udphdr_ + sizeof(xzhnet_udp_hdr), (unsigned char*)udphdr_ + uudp_len, inserter(udp_data, udp_data.begin()));
+				if (!l_udp_packet_ptr_)
+				{
+					break;
+				}
 
-				debughelp::safe_debugstr(200, "ipid:[%d] srcip:0x%08x sport:%d dstip:0x%08x dport:%d, datasize:%d", ip_id, isrc_ip, isrc_port, idst_ip, idst_port, udp_data.size());
+				std::copy((unsigned char*)udphdr_ + sizeof(xzhnet_udp_hdr), (unsigned char*)udphdr_ + uudp_len, inserter(l_udp_packet_ptr_->set_tcp_packet_data(), l_udp_packet_ptr_->set_tcp_packet_data().begin()));
+
+				notify_udppacket(l_udp_packet_ptr_);
 
 				bretvalue = true;
 
 			} while (false);
+
+			return bretvalue;
+		}
+	private:
+		bool notify_udppacket(udp_packet_node_ptr udp_packet_ptr_)
+		{
+			bool bretvalue = false;
+
+			for (size_t index_ = 0; index_ < udp_repacket_hub_.size(); index_ ++)
+			{
+				udp_repacket_hub::return_type_ptr temp_ = udp_repacket_hub_[index_];
+				if (!temp_)
+				{
+					continue;
+				}
+
+				if((*temp_)(udp_packet_ptr_))
+				{
+				}
+				else
+				{
+				}
+			}
 
 			return bretvalue;
 		}
@@ -118,6 +159,8 @@ namespace xzh
 			answer = ~sum;                          /* truncate to 16 bits */
 			return (answer);
 		}
+		private:
+			udp_repacket_hub udp_repacket_hub_;
 	};
 };
 

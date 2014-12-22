@@ -10,6 +10,7 @@ using namespace std;
 
 namespace xzh
 {
+	//////////////////////////////////////////////////////////////////////////
 	enum xzh_tcp_state
 	{
 		tcp_connect = 0x10,
@@ -18,13 +19,14 @@ namespace xzh
 		tcp_end
 	};
 
-	//////////////////////////////////////////////////////////////////////////
-	class tcp_queue_node
+	class tcp_packet_node
 	{
 	public:
-		typedef vector<unsigned char>tcp_queue_data;
-		typedef vector<unsigned int> tcp_tuple_data;
-		typedef enum vector_offset
+		typedef vector<unsigned char>	tcp_packet_data;
+		typedef vector<unsigned int>	tcp_tuple_data;
+
+	private:
+		enum vector_offset
 		{
 			srcip = 1,
 			dstip,
@@ -36,8 +38,9 @@ namespace xzh
 			state,
 			len,
 		};
+		
 	public:
-		explicit tcp_queue_node(unsigned int s_ip,
+		explicit tcp_packet_node(unsigned int s_ip,
 			unsigned int d_ip,
 			unsigned int s_port,
 			unsigned int d_port,
@@ -58,34 +61,34 @@ namespace xzh
 			tcp_tuple_data_.push_back(tcp_state);
 			tcp_tuple_data_.push_back(data_len);
 		}
-		~tcp_queue_node()
+		~tcp_packet_node()
 		{
 			tcp_tuple_data_.clear();
-			tcp_queue_data_.clear();
+			tcp_pakcet_data_.clear();
 		}
 	public:
 		template <typename data>
 		bool add_data(data &data_)
 		{
-			copy(data_.begin(), data_.end(), inserter(tcp_queue_data_, tcp_queue_data_.begin()));
-			return !tcp_queue_data_.empty();
+			copy(data_.begin(), data_.end(), inserter(tcp_pakcet_data_, tcp_pakcet_data_.begin()));
+			return !tcp_pakcet_data_.empty();
 		}
 
 		template <typename data>
 		bool copy_data(data &data_)
 		{
-			copy(tcp_queue_data_.begin(), tcp_queue_data_.end(), inserter(data_, data_.end()));
+			copy(tcp_pakcet_data_.begin(), tcp_pakcet_data_.end(), inserter(data_, data_.end()));
 			return !data_.empty();
 		}
 
-		const tcp_queue_data &tcp_queue_data_ref()
+		const tcp_packet_data &get_tcp_packet_data()
 		{
-			return tcp_queue_data_;
+			return tcp_pakcet_data_;
 		}
 
-		tcp_queue_data &tcp_queue_data_set()
+		tcp_packet_data &set_tcp_packet_data()
 		{
-			return tcp_queue_data_;
+			return tcp_pakcet_data_;
 		}
 
 		bool remove_data(unsigned int iremove_len)
@@ -94,13 +97,13 @@ namespace xzh
 
 			do 
 			{
-				if (iremove_len > tcp_queue_data_.size())
+				if (iremove_len > tcp_pakcet_data_.size())
 				{
 					bretvalue = true;
 					break;
 				}
 
-				tcp_queue_data_.erase(tcp_queue_data_.begin(), tcp_queue_data_.begin() + iremove_len);
+				tcp_pakcet_data_.erase(tcp_pakcet_data_.begin(), tcp_pakcet_data_.begin() + iremove_len);
 
 				bretvalue = true;
 
@@ -165,11 +168,143 @@ namespace xzh
 			return (tcp_tuple_data_[client] == 0) ? false : true;
 		}
 	private:
-		tcp_queue_data tcp_queue_data_;
+		tcp_packet_data tcp_pakcet_data_;
 		tcp_tuple_data tcp_tuple_data_;
 	};
 
-	typedef boost::shared_ptr<tcp_queue_node> tcp_queue_node_ptr;
+	typedef boost::shared_ptr<tcp_packet_node> tcp_packet_node_ptr;
+
+
+	class udp_packet_node
+	{
+	public:
+		typedef vector<unsigned char> udp_packet_data;
+		typedef vector<unsigned int>  udp_tuple_data;
+
+	private:
+		enum vector_offset
+		{
+			srcip = 1,
+			dstip,
+			srcport,
+			dstport,
+			client,
+			len,
+		};
+
+	public:
+		explicit udp_packet_node(unsigned int s_ip,
+			unsigned int d_ip,
+			unsigned int s_port,
+			unsigned int d_port,
+			unsigned int bclient,
+			unsigned int data_len)
+		{
+			udp_tuple_data_.push_back(0);
+			udp_tuple_data_.push_back(s_ip);
+			udp_tuple_data_.push_back(d_ip);
+			udp_tuple_data_.push_back(s_port);
+			udp_tuple_data_.push_back(d_port);
+			udp_tuple_data_.push_back(bclient);
+			udp_tuple_data_.push_back(data_len);
+		}
+		~udp_packet_node()
+		{
+			udp_tuple_data_.clear();
+			udp_packet_data_.clear();
+		}
+	public:
+		template <typename data>
+		bool add_data(data &data_)
+		{
+			copy(data_.begin(), data_.end(), inserter(udp_packet_data_, udp_packet_data_.begin()));
+			return !udp_packet_data_.empty();
+		}
+
+		template <typename data>
+		bool copy_data(data &data_)
+		{
+			copy(udp_packet_data_.begin(), udp_packet_data_.end(), inserter(data_, data_.end()));
+			return !data_.empty();
+		}
+
+		const udp_packet_data &get_tcp_packet_data()
+		{
+			return udp_packet_data_;
+		}
+
+		udp_packet_data &set_tcp_packet_data()
+		{
+			return udp_packet_data_;
+		}
+
+		bool remove_data(unsigned int iremove_len)
+		{
+			bool bretvalue = false;
+
+			do 
+			{
+				if (iremove_len > udp_packet_data_.size())
+				{
+					bretvalue = true;
+					break;
+				}
+
+				udp_packet_data_.erase(udp_packet_data_.begin(), udp_packet_data_.begin() + iremove_len);
+
+				bretvalue = true;
+
+			} while (false);
+
+			return bretvalue;
+		}
+
+	public:
+		unsigned int get_tuple_hash()
+		{
+			return boost::hash_range(udp_tuple_data_.begin(), udp_tuple_data_.begin() + dstport);
+		}
+
+		unsigned int get_client_hash()
+		{
+			return boost::hash_range(udp_tuple_data_.begin(), udp_tuple_data_.begin() + client);
+		}
+
+		unsigned int getdatalen()
+		{
+			return udp_tuple_data_[len];
+		}
+
+		unsigned int gets_ip()
+		{
+			return udp_tuple_data_[srcip];
+		}
+
+		unsigned int getd_ip()
+		{
+			return udp_tuple_data_[dstip];
+		}
+
+		unsigned short gets_port()
+		{
+			return (unsigned short)udp_tuple_data_[srcport];
+		}
+
+		unsigned short getd_port()
+		{
+			return (unsigned short)udp_tuple_data_[dstport];
+		}
+
+		bool isclient()
+		{
+			return (udp_tuple_data_[client] == 0) ? false : true;
+		}
+	private:
+		udp_tuple_data	udp_tuple_data_;
+		udp_packet_data	udp_packet_data_;
+	};
+
+	typedef boost::shared_ptr<udp_packet_node> udp_packet_node_ptr;
 };
 
 #endif

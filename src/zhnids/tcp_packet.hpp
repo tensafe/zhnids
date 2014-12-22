@@ -89,7 +89,7 @@ namespace xzh
 		};
 
 		typedef map<tcp_key, tcp_stream, tcp_key_compare> tcp_stream_map;
-		typedef pcap_hub_impl<string,bool (tcp_queue_node_ptr) > tcp_data_hub;
+		typedef pcap_hub_impl<string,bool (tcp_packet_node_ptr) > tcp_data_hub;
 
 	public:
 		bool tcp_handler(vector<unsigned char> &data_, int len, string &devname_)
@@ -121,8 +121,8 @@ namespace xzh
 
 
 				//ip
-				u_int isrc_ip = /*ntohl*/(iphdr_->ip_src.S_un.S_addr);
-				u_int idst_ip = /*ntohl*/(iphdr_->ip_dst.S_un.S_addr);
+				u_int isrc_ip = ntohl(iphdr_->ip_src.S_un.S_addr);
+				u_int idst_ip = ntohl(iphdr_->ip_dst.S_un.S_addr);
 
 				//port
 				u_short isrc_port = ntohs(tcphdr_->th_sport);
@@ -273,7 +273,7 @@ namespace xzh
 							tcp_stream_find_->server_.tcp_state_ = TCP_ESTABLISHED;
 							tcp_stream_find_->server_.ack_seq = ntohl(tcphdr_->th_seq) + 1;
 
-							tcp_queue_node_ptr l_tcp_queue_node_ptr = tcp_queue_node_ptr(new tcp_queue_node(tcp_stream_find_->tcp_key_.src_ip,
+							tcp_packet_node_ptr l_tcp_queue_node_ptr = tcp_packet_node_ptr(new tcp_packet_node(tcp_stream_find_->tcp_key_.src_ip,
 								tcp_stream_find_->tcp_key_.dst_ip,
 								tcp_stream_find_->tcp_key_.src_port,
 								tcp_stream_find_->tcp_key_.dst_port,
@@ -299,7 +299,7 @@ namespace xzh
 				{
 					debughelp::safe_debugstr(200, "rcv rst data...,delete tcp stream..");
 
-					tcp_queue_node_ptr l_tcp_queue_node_ptr = tcp_queue_node_ptr(new tcp_queue_node(tcp_stream_find_->tcp_key_.src_ip,
+					tcp_packet_node_ptr l_tcp_queue_node_ptr = tcp_packet_node_ptr(new tcp_packet_node(tcp_stream_find_->tcp_key_.src_ip,
 						tcp_stream_find_->tcp_key_.dst_ip,
 						tcp_stream_find_->tcp_key_.src_port,
 						tcp_stream_find_->tcp_key_.dst_port,
@@ -321,7 +321,7 @@ namespace xzh
 					snd->tcp_state_ = FIN_SENT;
 					find_tcp_stream_it_->second.timer_.restart();
 
-					tcp_queue_node_ptr l_tcp_queue_node_ptr = tcp_queue_node_ptr(new tcp_queue_node(tcp_stream_find_->tcp_key_.src_ip,
+					tcp_packet_node_ptr l_tcp_queue_node_ptr = tcp_packet_node_ptr(new tcp_packet_node(tcp_stream_find_->tcp_key_.src_ip,
 						tcp_stream_find_->tcp_key_.dst_ip,
 						tcp_stream_find_->tcp_key_.src_port,
 						tcp_stream_find_->tcp_key_.dst_port,
@@ -367,7 +367,7 @@ namespace xzh
 
 					if (rcv->tcp_state_ == FIN_CONFIRMED && snd->tcp_state_ == FIN_CONFIRMED)
 					{
-						tcp_queue_node_ptr l_tcp_queue_node_ptr = tcp_queue_node_ptr(new tcp_queue_node(tcp_stream_find_->tcp_key_.src_ip,
+						tcp_packet_node_ptr l_tcp_queue_node_ptr = tcp_packet_node_ptr(new tcp_packet_node(tcp_stream_find_->tcp_key_.src_ip,
 							tcp_stream_find_->tcp_key_.dst_ip,
 							tcp_stream_find_->tcp_key_.src_port,
 							tcp_stream_find_->tcp_key_.dst_port,
@@ -393,7 +393,7 @@ namespace xzh
 
 				if (datalen > 0)
 				{
-					tcp_queue_node_ptr l_tcp_queue_node_ptr = tcp_queue_node_ptr(new tcp_queue_node(tcp_stream_find_->tcp_key_.src_ip,
+					tcp_packet_node_ptr l_tcp_queue_node_ptr = tcp_packet_node_ptr(new tcp_packet_node(tcp_stream_find_->tcp_key_.src_ip,
 						tcp_stream_find_->tcp_key_.dst_ip,
 						tcp_stream_find_->tcp_key_.src_port,
 						tcp_stream_find_->tcp_key_.dst_port,
@@ -403,7 +403,7 @@ namespace xzh
 						tcp_data,
 						datalen));
 
-					std::copy((unsigned char*)tcphdr_ + (tcphdr_->th_off << 2), (unsigned char*)tcphdr_ +  datalen + (tcphdr_->th_off << 2), inserter(l_tcp_queue_node_ptr->tcp_queue_data_set(), l_tcp_queue_node_ptr->tcp_queue_data_set().begin()));
+					std::copy((unsigned char*)tcphdr_ + (tcphdr_->th_off << 2), (unsigned char*)tcphdr_ +  datalen + (tcphdr_->th_off << 2), inserter(l_tcp_queue_node_ptr->set_tcp_packet_data(), l_tcp_queue_node_ptr->set_tcp_packet_data().begin()));
 
 					notify_handler(l_tcp_queue_node_ptr);
 				}
@@ -419,7 +419,7 @@ namespace xzh
 			return tcp_data_hub_.add_handler(strkey, callfun_);
 		}
 	private:
-		bool notify_handler(tcp_queue_node_ptr tcp_queue_node_ptr_)
+		bool notify_handler(tcp_packet_node_ptr tcp_queue_node_ptr_)
 		{
 			bool bretvalue = false;
 
@@ -561,7 +561,7 @@ namespace xzh
 				{
 					if(((pos->second.client_.tcp_state_ == FIN_SENT) || (pos->second.server_.tcp_state_ == FIN_SENT) || (pos->second.client_.tcp_state_ == FIN_CONFIRMED) || (pos->second.server_.tcp_state_ == FIN_CONFIRMED)) && (pos->second.timer_.elapsed() > (double)tcp_max_time_out))
 					{
-						tcp_queue_node_ptr l_tcp_queue_node_ptr = tcp_queue_node_ptr(new tcp_queue_node(pos->second.tcp_key_.src_ip,
+						tcp_packet_node_ptr l_tcp_queue_node_ptr = tcp_packet_node_ptr(new tcp_packet_node(pos->second.tcp_key_.src_ip,
 							pos->second.tcp_key_.dst_ip,
 							pos->second.tcp_key_.src_port,
 							pos->second.tcp_key_.dst_port,
