@@ -214,7 +214,7 @@ namespace xzh
 
 	class ipfragment
 	{
-		typedef pcap_hub_impl<string, bool (vector<unsigned char>&, int, string &strdevname) > ippacket_hub;
+		typedef pcap_hub_impl<string, bool (vector<unsigned char>&, int, netdevice_ptr) > ippacket_hub;
 	public:
 		template <typename TFun>
 		bool add_ippacket_handler(string strkey, TFun callfun_)
@@ -222,16 +222,10 @@ namespace xzh
 			return ippacket_hub_.add_handler(strkey, callfun_);
 		}
 
-		bool ipfrag_handler(std::vector<unsigned char> &data_, int len, std::string &devname)
+		bool ipfrag_handler(std::vector<unsigned char> &data_, int len, netdevice_ptr netdevice_info_)
 		{
 			do 
 			{
-				if (devname.empty())
-				{
-					debughelp::safe_debugstr(200, "devname empty");
-					break;
-				}
-
 				if (len < sizeof(xzhnet_ipv4_hdr))
 				{
 					debughelp::safe_debugstr(200, "len too small.. hdr error");
@@ -282,7 +276,6 @@ namespace xzh
 					//skip check sum
 				}
 
-
 				//验证ip 扩展数据
 				if (iphdr_->ip_hl > 5)
 				{
@@ -308,7 +301,7 @@ namespace xzh
 							continue;
 						}
 
-						if((*temp_)(data_, len, devname))
+						if((*temp_)(data_, len, netdevice_info_))
 						{
 						}
 						else
@@ -351,7 +344,7 @@ namespace xzh
 									continue;
 								}
 
-								if((*temp_)(l_ippacket_data, l_ippacket_data.size(), devname))
+								if((*temp_)(l_ippacket_data, l_ippacket_data.size(), netdevice_info_))
 								{
 								}
 								else
@@ -395,7 +388,7 @@ namespace xzh
 									continue;
 								}
 
-								if((*temp_)(l_ippacket_data, l_ippacket_data.size(), devname))
+								if((*temp_)(l_ippacket_data, l_ippacket_data.size(), netdevice_info_))
 								{
 								}
 								else
@@ -440,7 +433,7 @@ namespace xzh
 									continue;
 								}
 
-								if((*temp_)(l_ippacket_data, l_ippacket_data.size(), devname))
+								if((*temp_)(l_ippacket_data, l_ippacket_data.size(), netdevice_info_))
 								{
 								}
 								else
@@ -495,9 +488,9 @@ namespace xzh
 
 	class ippacket
 	{
-		typedef pcap_hub_impl<string, bool (vector<unsigned char>&, int, string &strdevname) > tcppacket_hub;
-		typedef pcap_hub_impl<string, bool (vector<unsigned char>&, int, string &strdevname) > udppacket_hub;
-		typedef pcap_hub_impl<string, bool (vector<unsigned char>&, int, string &strdevname) > icmppacket_hub;
+		typedef pcap_hub_impl<string, bool (vector<unsigned char>&, int, netdevice_ptr) > tcppacket_hub;
+		typedef pcap_hub_impl<string, bool (vector<unsigned char>&, int, netdevice_ptr) > udppacket_hub;
+		typedef pcap_hub_impl<string, bool (vector<unsigned char>&, int, netdevice_ptr) > icmppacket_hub;
 	public:
 		template <typename TFun>
 		bool add_tcp_handler(string strkey, TFun callfun_)
@@ -517,7 +510,7 @@ namespace xzh
 			return icmppacket_hub_.add_handler(strkey, callfun_);
 		}
 
-		bool ippacket_handler(std::vector<unsigned char> &data_, int len, std::string &devname)
+		bool ippacket_handler(std::vector<unsigned char> &data_, int len, netdevice_ptr netdeice_info_)
 		{
 			bool bretvalue = false;
 
@@ -534,7 +527,7 @@ namespace xzh
 							continue;
 						}
 
-						if((*temp_)(data_, data_.size(), devname))
+						if((*temp_)(data_, data_.size(), netdeice_info_))
 						{
 						}
 						else
@@ -554,7 +547,7 @@ namespace xzh
 							continue;
 						}
 
-						if((*temp_)(data_, data_.size(), devname))
+						if((*temp_)(data_, data_.size(), netdeice_info_))
 						{
 						}
 						else
@@ -575,7 +568,7 @@ namespace xzh
 							continue;
 						}
 
-						if((*temp_)(data_, data_.size(), devname))
+						if((*temp_)(data_, data_.size(), netdeice_info_))
 						{
 						}
 						else

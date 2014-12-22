@@ -7,7 +7,7 @@ bool tcp_rehandler(xzh::tcp_packet_node_ptr l_tcp_queue_node)
 {
 	if (l_tcp_queue_node)
 	{
-		cout << l_tcp_queue_node->gets_ip() << endl;
+		//cout << l_tcp_queue_node->gets_ip() << endl;
 		cout << l_tcp_queue_node->getdatalen() << endl;
 	}
 	

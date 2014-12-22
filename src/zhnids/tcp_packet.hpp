@@ -65,7 +65,6 @@ namespace xzh
 		{
 			tcp_key tcp_key_;
 			boost::timer timer_;
-			string  devname_;
 			tcp_half_stream client_;
 			tcp_half_stream server_;
 		};
@@ -92,13 +91,13 @@ namespace xzh
 		typedef pcap_hub_impl<string,bool (tcp_packet_node_ptr) > tcp_data_hub;
 
 	public:
-		bool tcp_handler(vector<unsigned char> &data_, int len, string &devname_)
+		bool tcp_handler(vector<unsigned char> &data_, int len, netdevice_ptr l_netdevice_ptr)
 		{
 			bool bretvalue = false;
 
 			do
 			{
-				clear_timeout();
+				clear_timeout(l_netdevice_ptr);
 			}
 			while(false);
 
@@ -107,18 +106,27 @@ namespace xzh
 				xzhnet_ipv4_hdr *iphdr_ = (xzhnet_ipv4_hdr*)&data_[0];
 				xzhnet_tcp_hdr	*tcphdr_ = (xzhnet_tcp_hdr*)&data_[iphdr_->ip_hl << 2];
 
-				if ((iphdr_->ip_src.S_un.S_addr == 0) || (iphdr_->ip_dst.S_un.S_addr == 0))
+				if ((iphdr_->ip_src.s_addr == 0) || (iphdr_->ip_dst.s_addr == 0))
 				{
 					debughelp::safe_debugstr(200, "ip addr error!");
 					break;
 				}
 
-				/*if (tcp_checmsum(tcphdr_, uipdatalen - uiphdrlen, iphdr_->ip_src.S_un.S_addr, iphdr_->ip_dst.S_un.S_addr) != 0)
-				{
-				debughelp::safe_debugstr(200, "tcp check sum error!");
-				break;
-				}*/
+				u_short uipdatalen = ntohs(iphdr_->ip_len);
+				u_short uiphdrlen = iphdr_->ip_hl << 2;
 
+				netdevice::netaddr_vector::iterator pos = std::find_if(l_netdevice_ptr->set_netaddr_vector().begin(), l_netdevice_ptr->set_netaddr_vector().end(), boost::bind(&tcppacket::isfind_device_info, this, iphdr_->ip_src.s_addr, _1));
+
+				if (pos != l_netdevice_ptr->set_netaddr_vector().end())
+				{
+				}
+				
+
+				if (tcp_checmsum(tcphdr_, uipdatalen - uiphdrlen, iphdr_->ip_src.s_addr, iphdr_->ip_dst.s_addr) != 0)
+				{
+					debughelp::safe_debugstr(200, "tcp check sum error!");
+					break;
+				}
 
 				//ip
 				u_int isrc_ip = ntohl(iphdr_->ip_src.S_un.S_addr);
@@ -152,7 +160,7 @@ namespace xzh
 						l_tcp_stream.client_.seq = ntohl(tcphdr_->th_seq) + 1;
 
 						l_tcp_stream.server_.tcp_state_ = TCP_CLOSE;
-						l_tcp_stream.devname_ = devname_;
+						//l_tcp_stream.devname_ = devname_;
 
 						if(insert_stream(l_tcp_key, l_tcp_stream))
 						{
@@ -171,8 +179,6 @@ namespace xzh
 					break;
 				}
 
-				u_short uipdatalen = ntohs(iphdr_->ip_len);
-				u_short uiphdrlen = iphdr_->ip_hl << 2;
 
 				int datalen = 0;
 
@@ -282,6 +288,11 @@ namespace xzh
 								snd->ack_seq,
 								tcp_connect,
 								0));
+							
+							if(l_tcp_queue_node_ptr->set_netdevice_ptr(l_netdevice_ptr))
+							{
+
+							}
 
 							notify_handler(l_tcp_queue_node_ptr);
 						}
@@ -309,6 +320,10 @@ namespace xzh
 						tcp_end,
 						0));
 
+					if(l_tcp_queue_node_ptr->set_netdevice_ptr(l_netdevice_ptr))
+					{
+
+					}
 					notify_handler(l_tcp_queue_node_ptr);
 
 					delete_stream(l_tcp_key);
@@ -331,6 +346,10 @@ namespace xzh
 						tcp_ending,
 						0));
 
+					if(l_tcp_queue_node_ptr->set_netdevice_ptr(l_netdevice_ptr))
+					{
+
+					}
 					notify_handler(l_tcp_queue_node_ptr);
 
 					//break;
@@ -377,6 +396,10 @@ namespace xzh
 							tcp_end,
 							0));
 
+						if(l_tcp_queue_node_ptr->set_netdevice_ptr(l_netdevice_ptr))
+						{
+
+						}
 						notify_handler(l_tcp_queue_node_ptr);
 
 						delete_stream(l_tcp_key);
@@ -403,6 +426,11 @@ namespace xzh
 						tcp_data,
 						datalen));
 
+					if(l_tcp_queue_node_ptr->set_netdevice_ptr(l_netdevice_ptr))
+					{
+
+					}
+
 					std::copy((unsigned char*)tcphdr_ + (tcphdr_->th_off << 2), (unsigned char*)tcphdr_ +  datalen + (tcphdr_->th_off << 2), inserter(l_tcp_queue_node_ptr->set_tcp_packet_data(), l_tcp_queue_node_ptr->set_tcp_packet_data().begin()));
 
 					notify_handler(l_tcp_queue_node_ptr);
@@ -418,6 +446,12 @@ namespace xzh
 		{
 			return tcp_data_hub_.add_handler(strkey, callfun_);
 		}
+
+		bool isfind_device_info(unsigned long src_ip, netdevice::netaddr_vector::value_type &netaddr_pos)
+		{
+			return (netaddr_pos.netaddr & netaddr_pos.netmask) == (src_ip & netaddr_pos.netmask);
+		}
+
 	private:
 		bool notify_handler(tcp_packet_node_ptr tcp_queue_node_ptr_)
 		{
@@ -463,34 +497,34 @@ namespace xzh
 
 		u_short checksum(void* data_, u_short len, int iaddon)
 		{
-		register int nleft = len;
-		register u_short *w = (u_short*)data_;
-		register int sum = iaddon;
-		u_short answer = 0;
+			register int nleft = len;
+			register u_short *w = (u_short*)data_;
+			register int sum = iaddon;
+			u_short answer = 0;
 
-		/*
-		*  Our algorithm is simple, using a 32 bit accumulator (sum),
-		*  we add sequential 16 bit words to it, and at the end, fold
-		*  back all the carry bits from the top 16 bits into the lower
-		*  16 bits.
-		*/
-		while (nleft > 1) 
-		{
-			sum += *w++;
-			nleft -= 2;
+			/*
+			*  Our algorithm is simple, using a 32 bit accumulator (sum),
+			*  we add sequential 16 bit words to it, and at the end, fold
+			*  back all the carry bits from the top 16 bits into the lower
+			*  16 bits.
+			*/
+			while (nleft > 1) 
+			{
+				sum += *w++;
+				nleft -= 2;
+			}
+			/* mop up an odd byte, if necessary */
+			if (nleft == 1)
+			{
+				*(u_char *)(&answer) = *(u_char *)w;
+				sum += answer;
+			}  
+			/* add back carry outs from top 16 bits to low 16 bits */
+			sum = (sum >> 16) + (sum & 0xffff);     /* add hi 16 to low 16 */
+			sum += (sum >> 16);                     /* add carry */
+			answer = ~sum;                          /* truncate to 16 bits */
+			return (answer);
 		}
-		/* mop up an odd byte, if necessary */
-		if (nleft == 1)
-		{
-			*(u_char *)(&answer) = *(u_char *)w;
-			sum += answer;
-		}  
-		/* add back carry outs from top 16 bits to low 16 bits */
-		sum = (sum >> 16) + (sum & 0xffff);     /* add hi 16 to low 16 */
-		sum += (sum >> 16);                     /* add carry */
-		answer = ~sum;                          /* truncate to 16 bits */
-		return (answer);
-	}
 	private:
 		bool find_stream(tcp_key & tcp_key_, bool &bisclient, tcp_stream_map::iterator &tcp_stream_it_)
 		{
@@ -549,7 +583,7 @@ namespace xzh
 
 			return bretvalue;
 		}
-		bool clear_timeout()
+		bool clear_timeout(netdevice_ptr l_netdevice_ptr)
 		{
 			bool bretvalue = false;
 
@@ -571,6 +605,11 @@ namespace xzh
 							tcp_end,
 							0));
 
+						if(l_tcp_queue_node_ptr->set_netdevice_ptr(l_netdevice_ptr))
+						{
+
+						}
+
 						notify_handler(l_tcp_queue_node_ptr);
 
 						tcp_stream_map_.erase(pos++);
@@ -586,6 +625,8 @@ namespace xzh
 
 			return bretvalue;
 		}
+
+
 	private:
 		boost::mutex	tcp_stream_map_mutex_;
 		tcp_stream_map tcp_stream_map_;

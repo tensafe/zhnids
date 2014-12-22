@@ -33,7 +33,7 @@ namespace xzh
 		}
 
 	public:
-		bool udp_handler(vector<unsigned char> &data_, int len, string &devname_)
+		bool udp_handler(vector<unsigned char> &data_, int len, netdevice_ptr l_netdevice_ptr)
 		{
 			bool bretvalue = false;
 
@@ -76,6 +76,10 @@ namespace xzh
 					break;
 				}
 
+				if(l_udp_packet_ptr_->set_netdevice_ptr(l_netdevice_ptr))
+				{
+
+				}
 				std::copy((unsigned char*)udphdr_ + sizeof(xzhnet_udp_hdr), (unsigned char*)udphdr_ + uudp_len, inserter(l_udp_packet_ptr_->set_tcp_packet_data(), l_udp_packet_ptr_->set_tcp_packet_data().begin()));
 
 				notify_udppacket(l_udp_packet_ptr_);

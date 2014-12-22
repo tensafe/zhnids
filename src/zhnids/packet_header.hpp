@@ -11,6 +11,63 @@ using namespace std;
 namespace xzh
 {
 	//////////////////////////////////////////////////////////////////////////
+	struct netaddr_info
+	{
+		netaddr_info()
+		{
+			netaddr = 0xffffff;
+			netmask = 0xffffff;
+			broadaddr = 0xffffff;
+			dstaddr = 0xffffff;
+		}
+		unsigned long netaddr;
+		unsigned long netmask;
+		unsigned long broadaddr;
+		unsigned long dstaddr;
+		unsigned short sa_family;
+
+	};
+
+	class netdevice
+	{
+	public:
+		typedef vector<netaddr_info> netaddr_vector;
+	public:
+		string& set_device_name()
+		{
+			return device_name;
+		}
+		const string &get_device_name()
+		{
+			return device_name;
+		}
+
+		netaddr_vector &set_netaddr_vector()
+		{
+			return netaddr_vector_;
+		}
+		const netaddr_vector &get_netaddr_vector()
+		{
+			return netaddr_vector_;
+		}
+
+		bool& set_lookback()
+		{
+			return isloopback;
+		}
+
+		const bool& get_lookback()
+		{
+			return isloopback;
+		}
+	private:
+		netaddr_vector netaddr_vector_;
+		string device_name;
+		bool isloopback;		
+	};
+
+	typedef boost::shared_ptr<netdevice> netdevice_ptr;
+
 	enum xzh_tcp_state
 	{
 		tcp_connect = 0x10,
@@ -38,7 +95,7 @@ namespace xzh
 			state,
 			len,
 		};
-		
+
 	public:
 		explicit tcp_packet_node(unsigned int s_ip,
 			unsigned int d_ip,
@@ -167,9 +224,29 @@ namespace xzh
 		{
 			return (tcp_tuple_data_[client] == 0) ? false : true;
 		}
+	public:
+		netdevice_ptr get_netdevice_ptr()
+		{
+			return netdevice_ptr_;
+		}
+
+		bool set_netdevice_ptr(netdevice_ptr _netdevice_ptr)
+		{
+			bool bretvalue = false;
+			do 
+			{
+				if (!_netdevice_ptr)
+				{
+					break;
+				}
+				netdevice_ptr_ = _netdevice_ptr;
+			} while (false);
+			return bretvalue;
+		}
 	private:
 		tcp_packet_data tcp_pakcet_data_;
 		tcp_tuple_data tcp_tuple_data_;
+		netdevice_ptr	netdevice_ptr_;
 	};
 
 	typedef boost::shared_ptr<tcp_packet_node> tcp_packet_node_ptr;
@@ -238,7 +315,6 @@ namespace xzh
 		bool remove_data(unsigned int iremove_len)
 		{
 			bool bretvalue = false;
-
 			do 
 			{
 				if (iremove_len > udp_packet_data_.size())
@@ -246,11 +322,8 @@ namespace xzh
 					bretvalue = true;
 					break;
 				}
-
 				udp_packet_data_.erase(udp_packet_data_.begin(), udp_packet_data_.begin() + iremove_len);
-
 				bretvalue = true;
-
 			} while (false);
 
 			return bretvalue;
@@ -286,9 +359,29 @@ namespace xzh
 		{
 			return (unsigned short)udp_tuple_data_[dstport];
 		}
+	public:
+		netdevice_ptr get_netdevice_ptr()
+		{
+			return netdevice_ptr_;
+		}
+
+		bool set_netdevice_ptr(netdevice_ptr _netdevice_ptr)
+		{
+			bool bretvalue = false;
+			do 
+			{
+				if (!_netdevice_ptr)
+				{
+					break;
+				}
+				netdevice_ptr_ = _netdevice_ptr;
+			} while (false);
+			return bretvalue;
+		}
 	private:
 		udp_tuple_data	udp_tuple_data_;
 		udp_packet_data	udp_packet_data_;
+		netdevice_ptr   netdevice_ptr_;
 	};
 
 	typedef boost::shared_ptr<udp_packet_node> udp_packet_node_ptr;
