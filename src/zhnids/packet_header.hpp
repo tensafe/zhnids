@@ -188,7 +188,6 @@ namespace xzh
 			dstip,
 			srcport,
 			dstport,
-			client,
 			len,
 		};
 
@@ -197,7 +196,6 @@ namespace xzh
 			unsigned int d_ip,
 			unsigned int s_port,
 			unsigned int d_port,
-			unsigned int bclient,
 			unsigned int data_len)
 		{
 			udp_tuple_data_.push_back(0);
@@ -205,7 +203,6 @@ namespace xzh
 			udp_tuple_data_.push_back(d_ip);
 			udp_tuple_data_.push_back(s_port);
 			udp_tuple_data_.push_back(d_port);
-			udp_tuple_data_.push_back(bclient);
 			udp_tuple_data_.push_back(data_len);
 		}
 		~udp_packet_node()
@@ -265,11 +262,6 @@ namespace xzh
 			return boost::hash_range(udp_tuple_data_.begin(), udp_tuple_data_.begin() + dstport);
 		}
 
-		unsigned int get_client_hash()
-		{
-			return boost::hash_range(udp_tuple_data_.begin(), udp_tuple_data_.begin() + client);
-		}
-
 		unsigned int getdatalen()
 		{
 			return udp_tuple_data_[len];
@@ -293,11 +285,6 @@ namespace xzh
 		unsigned short getd_port()
 		{
 			return (unsigned short)udp_tuple_data_[dstport];
-		}
-
-		bool isclient()
-		{
-			return (udp_tuple_data_[client] == 0) ? false : true;
 		}
 	private:
 		udp_tuple_data	udp_tuple_data_;
