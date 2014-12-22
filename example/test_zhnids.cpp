@@ -1,19 +1,3 @@
-# zhnids project #
-
-## desp ##
-this project is developing...
-
-## dev depend ##
-1. c++
-2. boost
-3. stl
-4. pcap
-
-## build ##
-from now, use on windows....
-
-## how to use ##
-```
 #include <iostream>
 #include <zhnids.hpp>
 
@@ -53,4 +37,3 @@ void main()
 
 	getchar();
 }
-```

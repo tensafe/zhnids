@@ -26,3 +26,12 @@
 *.exe
 *.out
 *.app
+
+# OutDir
+Debug
+Release
+
+#VS
+*.user
+*.suo
+*.ncb
