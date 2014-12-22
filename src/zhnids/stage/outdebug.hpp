@@ -1,5 +1,5 @@
-#ifndef _out_debug_hpp__
-#define _out_debug_hpp__
+#ifndef OUT_DEBUG_HPP
+#define OUT_DEBUG_HPP
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1200)
 # pragma once
@@ -72,8 +72,7 @@ namespace xzh
 
 					if (strlen(lpfile_path) == 0)
 					{
-						_mkdir("safe_log");
-						sprintf((char*)strfile_path.c_str(), "safe_log\\%08x.log", GetTickCount());
+						sprintf((char*)strfile_path.c_str(), "%08x.log", GetTickCount());
 					}
 					else
 					{
