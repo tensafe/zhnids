@@ -12,7 +12,7 @@ namespace xzh
 	class http_response
 	{
 	public:
-		typedef std::multimap<std::string, std::string> http_headdic;
+		typedef std::map<std::string, std::string> http_headdic;
 		typedef boost::split_iterator<typename response::iterator> httpdata_split_iterator;
 	public:
 		http_response(response &http_raw_data)
@@ -22,7 +22,7 @@ namespace xzh
 		}
 
 	public:
-		std::string gethead(const std::string strkey)
+		std::string gethead(std::string strkey)
 		{
 			return http_head_dic_[strkey];
 		}

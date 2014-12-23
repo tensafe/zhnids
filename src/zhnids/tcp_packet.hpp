@@ -115,22 +115,25 @@ namespace xzh
 				u_short uipdatalen = ntohs(iphdr_->ip_len);
 				u_short uiphdrlen = iphdr_->ip_hl << 2;
 
-				netdevice::netaddr_vector::iterator pos = std::find_if(l_netdevice_ptr->set_netaddr_vector().begin(), l_netdevice_ptr->set_netaddr_vector().end(), boost::bind(&tcppacket::isfind_device_info, this, iphdr_->ip_src.s_addr, _1));
+			/*	netdevice::netaddr_vector::iterator pos = std::find_if(l_netdevice_ptr->set_netaddr_vector().begin(), l_netdevice_ptr->set_netaddr_vector().end(), boost::bind(&tcppacket::isfind_device_info, this, iphdr_->ip_src.s_addr, _1));
 
 				if (pos != l_netdevice_ptr->set_netaddr_vector().end())
 				{
+					
 				}
-				
-
-				if (tcp_checmsum(tcphdr_, uipdatalen - uiphdrlen, iphdr_->ip_src.s_addr, iphdr_->ip_dst.s_addr) != 0)
+				else
 				{
-					debughelp::safe_debugstr(200, "tcp check sum error!");
-					break;
-				}
+					if (tcp_checmsum(tcphdr_, uipdatalen - uiphdrlen, iphdr_->ip_src.s_addr, iphdr_->ip_dst.s_addr) != 0)
+					{
+						debughelp::safe_debugstr(200, "tcp check sum error!");
+						break;
+					}
+				}*/
+			
 
 				//ip
-				u_int isrc_ip = ntohl(iphdr_->ip_src.S_un.S_addr);
-				u_int idst_ip = ntohl(iphdr_->ip_dst.S_un.S_addr);
+				u_int isrc_ip = ntohl(iphdr_->ip_src.s_addr);
+				u_int idst_ip = ntohl(iphdr_->ip_dst.s_addr);
 
 				//port
 				u_short isrc_port = ntohs(tcphdr_->th_sport);
