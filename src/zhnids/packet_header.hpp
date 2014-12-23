@@ -65,8 +65,8 @@ namespace xzh
 		string device_name;
 		bool isloopback;		
 	};
-
 	typedef boost::shared_ptr<netdevice> netdevice_ptr;
+
 
 	enum xzh_tcp_state
 	{
@@ -248,7 +248,6 @@ namespace xzh
 		tcp_tuple_data tcp_tuple_data_;
 		netdevice_ptr	netdevice_ptr_;
 	};
-
 	typedef boost::shared_ptr<tcp_packet_node> tcp_packet_node_ptr;
 
 
@@ -383,7 +382,6 @@ namespace xzh
 		udp_packet_data	udp_packet_data_;
 		netdevice_ptr   netdevice_ptr_;
 	};
-
 	typedef boost::shared_ptr<udp_packet_node> udp_packet_node_ptr;
 };
 
