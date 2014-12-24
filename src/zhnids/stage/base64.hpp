@@ -13,7 +13,7 @@ namespace xzh
 	{
 		typedef boost::archive::iterators::base64_from_binary<boost::archive::iterators::transform_width<s::const_iterator, 6, 8> > base64_encode_iterator;
 
-		copy(base64_encode_iterator(s_.begin()) , base64_encode_iterator(s_.end()), inserter(d_, d_.begin()));
+		copy(base64_encode_iterator(s_.begin()) , base64_encode_iterator(s_.end()), inserter(d_, d_.end()));
 		size_t equal_count = (3 - s_.size() % 3) % 3;  
 		for (size_t i = 0; i < equal_count; i++)
 		{
@@ -32,7 +32,7 @@ namespace xzh
 
 		try
 		{ 
-			copy(base64_decode_iterator(s_.begin()) , base64_decode_iterator(s_.end()), inserter(d_, d_.begin()));
+			copy(base64_decode_iterator(s_.begin()) , base64_decode_iterator(s_.end()), inserter(d_, d_.end()));
 		}
 		catch(...)
 		{ 

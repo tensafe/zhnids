@@ -127,7 +127,7 @@ namespace xzh
 		template <typename data>
 		bool add_data(data &data_)
 		{
-			copy(data_.begin(), data_.end(), inserter(tcp_pakcet_data_, tcp_pakcet_data_.begin()));
+			copy(data_.begin(), data_.end(), inserter(tcp_pakcet_data_, tcp_pakcet_data_.end()));
 			return !tcp_pakcet_data_.empty();
 		}
 
@@ -290,7 +290,7 @@ namespace xzh
 		template <typename data>
 		bool add_data(data &data_)
 		{
-			copy(data_.begin(), data_.end(), inserter(udp_packet_data_, udp_packet_data_.begin()));
+			copy(data_.begin(), data_.end(), inserter(udp_packet_data_, udp_packet_data_.end()));
 			return !udp_packet_data_.empty();
 		}
 

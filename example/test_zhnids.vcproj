@@ -117,6 +117,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
+				AdditionalIncludeDirectories="$(boost_include);..\src\"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
@@ -135,7 +136,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="wpcap.lib ws2_32.lib"
 				LinkIncremental="1"
+				AdditionalLibraryDirectories="$(boost_lib_x86)"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"

@@ -434,7 +434,7 @@ namespace xzh
 
 					}
 
-					std::copy((unsigned char*)tcphdr_ + (tcphdr_->th_off << 2), (unsigned char*)tcphdr_ +  datalen + (tcphdr_->th_off << 2), inserter(l_tcp_queue_node_ptr->set_tcp_packet_data(), l_tcp_queue_node_ptr->set_tcp_packet_data().begin()));
+					std::copy((unsigned char*)tcphdr_ + (tcphdr_->th_off << 2), (unsigned char*)tcphdr_ +  datalen + (tcphdr_->th_off << 2), inserter(l_tcp_queue_node_ptr->set_tcp_packet_data(), l_tcp_queue_node_ptr->set_tcp_packet_data().end()));
 
 					notify_handler(l_tcp_queue_node_ptr);
 				}

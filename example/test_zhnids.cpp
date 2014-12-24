@@ -1,14 +1,21 @@
 #include <iostream>
 #include <zhnids.hpp>
+#include <vector>
 
 using namespace std;
+
+typedef vector<unsigned char> vector_data;
+
+vector_data vector_data_;
 
 bool tcp_rehandler(xzh::tcp_packet_node_ptr l_tcp_queue_node)
 {
 	if (l_tcp_queue_node)
 	{
 		//cout << l_tcp_queue_node->gets_ip() << endl;
-		cout << l_tcp_queue_node->getdatalen() << endl;
+		cout << "start..." << endl;
+		std::copy(l_tcp_queue_node->get_tcp_packet_data().begin(), l_tcp_queue_node->get_tcp_packet_data().end(), inserter(vector_data_, vector_data_.end()));
+		cout << "endl..." <<endl;
 	}
 	
 	return true;
@@ -44,7 +51,7 @@ void main()
 	
 	xzh::xzhnids l_test_nids;
 	l_test_nids.add_ipfrag_handler("ip", boost::bind(&xzh::ipfragment::ipfrag_handler, &l_ipfragment, _1, _2, _3));
-	l_test_nids.start("");
+	l_test_nids.start("tcp port 80", 100, 10);
 
 	getchar();
 }

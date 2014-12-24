@@ -229,7 +229,7 @@ namespace xzh
 
 					int idatalen = pkt_header->caplen - 14;
 					vector<unsigned char> data_vector;
-					copy(pkt_data + 14, pkt_data + pkt_header->caplen, inserter(data_vector, data_vector.begin()));
+					copy(pkt_data + 14, pkt_data + pkt_header->caplen, inserter(data_vector, data_vector.end()));
 
 					if (data_vector.empty())
 					{

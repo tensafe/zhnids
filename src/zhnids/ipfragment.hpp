@@ -323,7 +323,7 @@ namespace xzh
 					ip_key_.ip_src = (iphdr_->ip_src.S_un.S_addr);
 
 					process_ipfragment::ip_fragment_data ip_frag_data_;
-					copy(data_.begin() + iphdr_->ip_hl * 4, data_.end(), inserter(ip_frag_data_, ip_frag_data_.begin()));
+					copy(data_.begin() + iphdr_->ip_hl * 4, data_.end(), inserter(ip_frag_data_, ip_frag_data_.end()));
 
 					bool isdone = false;
 					process_ipfragment_.insert(ip_key_, ((uoffset << 3)), process_ipfragment::e_frag, ip_frag_data_, isdone);
@@ -412,7 +412,7 @@ namespace xzh
 					ip_key_.ip_src = (iphdr_->ip_src.S_un.S_addr);
 
 					process_ipfragment::ip_fragment_data ip_frag_data_;
-					copy(data_.begin() + iphdr_->ip_hl * 4, data_.end(), inserter(ip_frag_data_, ip_frag_data_.begin()));
+					copy(data_.begin() + iphdr_->ip_hl * 4, data_.end(), inserter(ip_frag_data_, ip_frag_data_.end()));
 
 					bool isdone = false;
 					process_ipfragment_.insert(ip_key_, ((uoffset << 3)), process_ipfragment::s_frag, ip_frag_data_, isdone);

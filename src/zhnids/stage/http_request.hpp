@@ -57,7 +57,7 @@ namespace xzh
 					break;
 				}
 
-				copy(boost::begin(*It), http_raw_data_.end(), inserter(body_, body_.begin()));
+				copy(boost::begin(*It), http_raw_data_.end(), inserter(body_, body_.end()));
 				//body_ = boost::copy_range<Body>(boost::iterator_range<request::iterator>(boost::begin(*It), boost::end(http_raw_data_.end())));
 			} while (false);
 

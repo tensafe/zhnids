@@ -63,7 +63,7 @@ namespace xzh
 					break;
 				}
 
-				copy(boost::begin(*It), http_raw_data_.end(), inserter(body_, body_.begin()));
+				copy(boost::begin(*It), http_raw_data_.end(), inserter(body_, body_.end()));
 			} while (false);
 
 			return !body_.empty();
