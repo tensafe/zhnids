@@ -1,6 +1,8 @@
 #ifndef HTTP_REQUEST_HPP
 #define HTTP_REQUEST_HPP
 #include <boost/algorithm/string.hpp>
+#include <boost/algorithm/searching/knuth_morris_pratt.hpp>
+#include <zhnids/stage/outdebug.hpp>
 #include <map>
 #include <string>
 #include <vector>
@@ -12,7 +14,9 @@ namespace xzh
 	{
 	public:
 		typedef std::map<std::string, std::string> http_headdic;
-		typedef boost::split_iterator<typename request::iterator> httpdata_split_iterator;
+		typedef request request_data;
+		typedef vector<unsigned char> substr_data;
+		typedef boost::split_iterator<typename request_data::iterator> httpdata_split_iterator;
 		enum parse_status
 		{
 			body_tag_notfound = 0,
@@ -23,7 +27,7 @@ namespace xzh
 			header_kv_ok,
 		};
 	public:
-		http_request(request &http_raw_data)
+		http_request(request_data &http_raw_data)
 			:http_raw_data_(http_raw_data)
 		{
 			//parse();
@@ -51,22 +55,18 @@ namespace xzh
 
 			do 
 			{
-				httpdata_split_iterator It = boost::make_split_iterator(http_raw_data_, boost::first_finder("\r\n\r\n", boost::is_iequal()));
+				vector<unsigned char> vector_newlines;
+				std::string str_newlines("\r\n\r\n");
+				std::copy(str_newlines.begin(), str_newlines.end(), inserter(vector_newlines, vector_newlines.end()));
+				typename request_data::iterator pos_find = boost::algorithm::knuth_morris_pratt_search(http_raw_data_.begin(), http_raw_data_.end(), vector_newlines.begin(), vector_newlines.end());
 
-				if (It == httpdata_split_iterator())
+				if (pos_find == http_raw_data_.end())
 				{
 					break;
 				}
 
-				advance(It, 1);
+				copy(pos_find + 4, http_raw_data_.end(), inserter(body_, body_.end()));
 
-				if (It == httpdata_split_iterator())
-				{
-					break;
-				}
-
-				copy(boost::begin(*It), http_raw_data_.end(), inserter(body_, body_.end()));
-				//body_ = boost::copy_range<Body>(boost::iterator_range<request::iterator>(boost::begin(*It), boost::end(http_raw_data_.end())));
 			} while (false);
 
 			return !body_.empty();
@@ -78,22 +78,18 @@ namespace xzh
 
 			do 
 			{
-				httpdata_split_iterator It = boost::make_split_iterator(http_raw_data_, boost::first_finder("\r\n\r\n", boost::is_iequal()));
-
-				if (It == httpdata_split_iterator())
+				vector<unsigned char> vector_newlines;
+				std::string str_newlines("\r\n\r\n");
+				std::copy(str_newlines.begin(), str_newlines.end(), inserter(vector_newlines, vector_newlines.end()));
+				typename request_data::iterator pos_find = boost::algorithm::knuth_morris_pratt_search(http_raw_data_.begin(), http_raw_data_.end(), vector_newlines.begin(), vector_newlines.end());
+				
+				if (pos_find == http_raw_data_.end())
 				{
 					break;
 				}
 
-				advance(It, 1);
+				isize = distance(pos_find, http_raw_data_.end());
 
-				if (It == httpdata_split_iterator())
-				{
-					break;
-				}
-
-				isize = distance(boost::begin(*It), http_raw_data_.end());
-				//body_ = boost::copy_range<Body>(boost::iterator_range<request::iterator>(boost::begin(*It), boost::end(http_raw_data_.end())));
 			} while (false);
 
 			return isize;
@@ -105,11 +101,12 @@ namespace xzh
 
 			do 
 			{
-				httpdata_split_iterator It = boost::make_split_iterator(http_raw_data_, boost::first_finder("\r\n\r\n", boost::is_iequal()));
-				httpdata_split_iterator ItBody = It;
-				advance(ItBody, 1);
+				vector<unsigned char> vector_newlines;
+				std::string str_newlines("\r\n\r\n");
+				std::copy(str_newlines.begin(), str_newlines.end(), inserter(vector_newlines, vector_newlines.end()));
+				request_data::iterator pos_find = boost::algorithm::knuth_morris_pratt_search(http_raw_data_.begin(), http_raw_data_.end(), vector_newlines.begin(), vector_newlines.end());
 
-				if (ItBody == httpdata_split_iterator())
+				if (pos_find == http_raw_data_.end())
 				{
 					//not find \r\n\r\n
 					iretvalue = body_tag_notfound;
@@ -118,14 +115,30 @@ namespace xzh
 
 				iretvalue = body_tag_found;
 
-				typedef std::vector<boost::iterator_range<request::iterator> > find_vector_type;
+				substr_data substr_data_;
+				substr_data_.push_back('\r');
+				substr_data_.push_back('\n');
+
+				typedef std::vector<std::pair<request_data::iterator, request_data::iterator> > find_vector_type;
 				find_vector_type find_vector_type_;
 
-				httpdata_split_iterator head_it = boost::make_split_iterator(*It, boost::first_finder("\r\n", boost::is_iequal()));
-				for (; head_it != httpdata_split_iterator(); head_it ++)
+				request_data::iterator sub_pos = http_raw_data_.begin();
+
+				do
 				{
-					find_vector_type_.push_back(*head_it);
+					request_data::iterator pre_pos = sub_pos;
+					sub_pos = boost::algorithm::knuth_morris_pratt_search(pre_pos, pos_find, substr_data_.begin(), substr_data_.end());
+
+					if (sub_pos == pos_find)
+					{
+						break;
+					}
+
+					find_vector_type_.push_back(make_pair(pre_pos, sub_pos));
+
+					advance(sub_pos, substr_data_.size());
 				}
+				while(true);
 
 				if (find_vector_type_.size() <= 1)
 				{
@@ -196,7 +209,7 @@ namespace xzh
 		}
 
 	private:
-		request	&http_raw_data_;
+		request_data	&http_raw_data_;
 		http_headdic http_head_dic_;
 		std::string  http_method_;
 		std::string  http_url_;

@@ -1,21 +1,28 @@
 #include <iostream>
 #include <zhnids.hpp>
 #include <vector>
+#include <list>
+
+#include <boost/timer.hpp>
 
 using namespace std;
 
-typedef vector<unsigned char> vector_data;
+typedef list<unsigned char> vector_data;
 
 vector_data vector_data_;
 
+
 bool tcp_rehandler(xzh::tcp_packet_node_ptr l_tcp_queue_node)
 {
+	
+
 	if (l_tcp_queue_node)
 	{
 		//cout << l_tcp_queue_node->gets_ip() << endl;
+		boost::timer timer_;
 		cout << "start..." << endl;
-		std::copy(l_tcp_queue_node->get_tcp_packet_data().begin(), l_tcp_queue_node->get_tcp_packet_data().end(), inserter(vector_data_, vector_data_.end()));
-		cout << "endl..." <<endl;
+		std::copy(l_tcp_queue_node->get_tcp_packet_data().begin(), l_tcp_queue_node->get_tcp_packet_data().end(), vector_data_.end());
+		cout << "endl..." <<timer_.elapsed()<<endl;
 	}
 	
 	return true;
