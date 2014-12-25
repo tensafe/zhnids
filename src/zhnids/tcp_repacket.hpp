@@ -46,6 +46,7 @@ namespace xzh
 					//ÉèÖÃ³õÊ¼SEQ..
 					seq_next_s = tcp_node_ptr->getseq();
 					seq_next_r = tcp_node_ptr->getackseq();
+					notify_tcppacket(tcp_node_ptr);
 					bretvalue = true;
 					break;
 				}
@@ -281,11 +282,14 @@ namespace xzh
 					break;
 				}
 
-				if (tcp_node_ptr->getstate() == tcp_ending)
+				if ((tcp_node_ptr->getstate() == tcp_ending)
+					||(tcp_node_ptr->getstate() == tcp_end))
 				{
+					notify_tcppacket(tcp_node_ptr);
 					bretvalue = true;
 					break;
 				}
+				
 			} while (false);
 
 			return bretvalue;
@@ -348,6 +352,15 @@ namespace xzh
 					break;
 				}
 
+				bretvalue = innser_add(tcp_queue_node_);
+
+				if (!bretvalue)
+				{
+					debughelp::safe_debugstr(200, "add error!");
+					break;
+				}
+
+
 				if ((tcp_queue_node_->getstate() == tcp_end))
 				{
 					bretvalue = tcp_queue_mn_.del(tcp_queue_node_->get_tuple_hash());
@@ -357,22 +370,6 @@ namespace xzh
 					}
 					break;
 				}
-
-				if ((tcp_queue_node_->getstate() == tcp_connect)
-					||(tcp_queue_node_->getstate() == tcp_data)
-					||(tcp_queue_node_->getstate() == tcp_ending))
-				{
-					bretvalue = innser_add(tcp_queue_node_);
-
-					if (!bretvalue)
-					{
-						debughelp::safe_debugstr(200, "add error!");
-					}
-					break;
-				}
-
-				debughelp::safe_debugstr(200, "un... error!");
-				bretvalue = false;
 
 			} while (false);
 

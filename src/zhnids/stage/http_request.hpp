@@ -88,7 +88,7 @@ namespace xzh
 					break;
 				}
 
-				isize = distance(pos_find, http_raw_data_.end());
+				isize = distance(pos_find + str_newlines.size(), http_raw_data_.end());
 
 			} while (false);
 
