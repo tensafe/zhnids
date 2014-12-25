@@ -13,13 +13,21 @@ namespace xzh
 	public:
 		typedef std::map<std::string, std::string> http_headdic;
 		typedef boost::split_iterator<typename request::iterator> httpdata_split_iterator;
+		enum parse_status
+		{
+			body_tag_notfound = 0,
+			body_tag_found,
+			header_newline_error,
+			method_url_error,
+			header_kv_error,
+			header_kv_ok,
+		};
 	public:
 		http_request(request &http_raw_data)
 			:http_raw_data_(http_raw_data)
 		{
-			parse();
+			//parse();
 		}
-
 	public:
 		std::string gethead(const std::string strkey)
 		{
@@ -64,9 +72,10 @@ namespace xzh
 			return !body_.empty();
 		}
 
-	private:
-		bool parse()
+		size_t get_body_size()
 		{
+			size_t isize = 0;
+
 			do 
 			{
 				httpdata_split_iterator It = boost::make_split_iterator(http_raw_data_, boost::first_finder("\r\n\r\n", boost::is_iequal()));
@@ -75,6 +84,39 @@ namespace xzh
 				{
 					break;
 				}
+
+				advance(It, 1);
+
+				if (It == httpdata_split_iterator())
+				{
+					break;
+				}
+
+				isize = distance(boost::begin(*It), http_raw_data_.end());
+				//body_ = boost::copy_range<Body>(boost::iterator_range<request::iterator>(boost::begin(*It), boost::end(http_raw_data_.end())));
+			} while (false);
+
+			return isize;
+		}
+
+		int parse()
+		{
+			int iretvalue = body_tag_notfound;
+
+			do 
+			{
+				httpdata_split_iterator It = boost::make_split_iterator(http_raw_data_, boost::first_finder("\r\n\r\n", boost::is_iequal()));
+				httpdata_split_iterator ItBody = It;
+				advance(ItBody, 1);
+
+				if (ItBody == httpdata_split_iterator())
+				{
+					//not find \r\n\r\n
+					iretvalue = body_tag_notfound;
+					break;
+				}
+
+				iretvalue = body_tag_found;
 
 				typedef std::vector<boost::iterator_range<request::iterator> > find_vector_type;
 				find_vector_type find_vector_type_;
@@ -87,6 +129,7 @@ namespace xzh
 
 				if (find_vector_type_.size() <= 1)
 				{
+					iretvalue = header_newline_error;
 					break;
 				}
 
@@ -94,6 +137,7 @@ namespace xzh
 				httpdata_split_iterator method_pos = boost::make_split_iterator(find_vector_type_[0], boost::first_finder(" ", boost::is_iequal()));
 				if (method_pos == httpdata_split_iterator())
 				{
+					iretvalue = method_url_error;
 					break;
 				}
 
@@ -103,6 +147,7 @@ namespace xzh
 
 				if (method_pos == httpdata_split_iterator())
 				{
+					iretvalue = method_url_error;
 					break;
 				}
 
@@ -134,11 +179,22 @@ namespace xzh
 
 						http_head_dic_.insert(std::make_pair(strkey, strvalue));
 					} while (false);
+
+
+					if (http_head_dic_.empty())
+					{
+						iretvalue = header_kv_error;
+						break;
+					}
+
+					iretvalue = header_kv_ok;
+
 				}
 			} while (false);
 
-			return true;
+			return iretvalue;
 		}
+
 	private:
 		request	&http_raw_data_;
 		http_headdic http_head_dic_;
