@@ -6,6 +6,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <boost/assign.hpp>
 
 namespace xzh
 {
@@ -55,10 +56,9 @@ namespace xzh
 
 			do 
 			{
-				vector<unsigned char> vector_newlines;
-				std::string str_newlines("\r\n\r\n");
-				std::copy(str_newlines.begin(), str_newlines.end(), inserter(vector_newlines, vector_newlines.end()));
-				typename request_data::iterator pos_find = boost::algorithm::knuth_morris_pratt_search(http_raw_data_.begin(), http_raw_data_.end(), vector_newlines.begin(), vector_newlines.end());
+				request_data sub_str_data;
+				boost::assign::push_back(sub_str_data)('\r')('\n')('\r')('\n');
+				typename request_data::iterator pos_find = boost::algorithm::knuth_morris_pratt_search(http_raw_data_.begin(), http_raw_data_.end(), sub_str_data.begin(), sub_str_data.end());
 
 				if (pos_find == http_raw_data_.end())
 				{
@@ -78,17 +78,16 @@ namespace xzh
 
 			do 
 			{
-				vector<unsigned char> vector_newlines;
-				std::string str_newlines("\r\n\r\n");
-				std::copy(str_newlines.begin(), str_newlines.end(), inserter(vector_newlines, vector_newlines.end()));
-				typename request_data::iterator pos_find = boost::algorithm::knuth_morris_pratt_search(http_raw_data_.begin(), http_raw_data_.end(), vector_newlines.begin(), vector_newlines.end());
+				request_data sub_str_data;
+				boost::assign::push_back(sub_str_data)('\r')('\n')('\r')('\n');
+				typename request_data::iterator pos_find = boost::algorithm::knuth_morris_pratt_search(http_raw_data_.begin(), http_raw_data_.end(), sub_str_data.begin(), sub_str_data.end());
 				
 				if (pos_find == http_raw_data_.end())
 				{
 					break;
 				}
 
-				isize = distance(pos_find + str_newlines.size(), http_raw_data_.end());
+				isize = distance(pos_find + sub_str_data.size(), http_raw_data_.end());
 
 			} while (false);
 
@@ -101,10 +100,9 @@ namespace xzh
 
 			do 
 			{
-				vector<unsigned char> vector_newlines;
-				std::string str_newlines("\r\n\r\n");
-				std::copy(str_newlines.begin(), str_newlines.end(), inserter(vector_newlines, vector_newlines.end()));
-				request_data::iterator pos_find = boost::algorithm::knuth_morris_pratt_search(http_raw_data_.begin(), http_raw_data_.end(), vector_newlines.begin(), vector_newlines.end());
+				request_data sub_str_data;
+				boost::assign::push_back(sub_str_data)('\r')('\n')('\r')('\n');
+				typename request_data::iterator pos_find = boost::algorithm::knuth_morris_pratt_search(http_raw_data_.begin(), http_raw_data_.end(), sub_str_data.begin(), sub_str_data.end());
 
 				if (pos_find == http_raw_data_.end())
 				{
@@ -115,9 +113,8 @@ namespace xzh
 
 				iretvalue = body_tag_found;
 
-				substr_data substr_data_;
-				substr_data_.push_back('\r');
-				substr_data_.push_back('\n');
+				request_data substr_data_;
+				boost::assign::push_back(substr_data_)('\r')('\n');
 
 				typedef std::vector<std::pair<request_data::iterator, request_data::iterator> > find_vector_type;
 				find_vector_type find_vector_type_;
@@ -128,13 +125,12 @@ namespace xzh
 				{
 					request_data::iterator pre_pos = sub_pos;
 					sub_pos = boost::algorithm::knuth_morris_pratt_search(pre_pos, pos_find, substr_data_.begin(), substr_data_.end());
+					find_vector_type_.push_back(make_pair(pre_pos, sub_pos));
 
 					if (sub_pos == pos_find)
 					{
 						break;
 					}
-
-					find_vector_type_.push_back(make_pair(pre_pos, sub_pos));
 
 					advance(sub_pos, substr_data_.size());
 				}
