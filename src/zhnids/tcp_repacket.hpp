@@ -56,16 +56,10 @@ namespace xzh
 					unsigned int ipacket_seq = tcp_node_ptr->getseq();
 					if (tcp_node_ptr->isclient())
 					{
-						//debughelp::safe_debugstr(200, "client: want->seq[%x], data->seq[%x]", seq_next_s, tcp_node_ptr->getseq());
 						do 
 						{
 							if (ipacket_seq == seq_next_s)
 							{
-								//debughelp::safe_debugstr(200, "ipacket:%x, seq_next_s:%x", ipacket_seq, seq_next_s);
-								//debughelp::safe_debugstr(200, "hit seq ...,call back data ...");
-
-								//todo ...
-								//call back.....
 								notify_tcppacket(tcp_node_ptr);
 
 								seq_next_s = ipacket_seq + tcp_node_ptr->getdatalen();
@@ -95,7 +89,7 @@ namespace xzh
 												break;
 											}
 
-											seq_next_s = l_tcp_node_ptr->getseq() + l_tcp_node_ptr->getdatalen();
+											seq_next_s = seq_next_s + l_tcp_node_ptr->getdatalen();
 
 											notify_tcppacket(l_tcp_node_ptr);
 
@@ -146,9 +140,9 @@ namespace xzh
 										break;
 									}
 
-									seq_next_s = tcp_node_ptr->getseq() + tcp_node_ptr->getdatalen();
-									//boost::mutex::scoped_lock lock(map_tcp_queue_data_r_mutex);
-									//map_tcp_queue_data_r.clear();
+									//seq_next_s = tcp_node_ptr->getseq() + tcp_node_ptr->getdatalen();
+									seq_next_s = seq_next_s + tcp_node_ptr->getdatalen();
+
 									notify_tcppacket(tcp_node_ptr);
 
 								} while (false);
@@ -168,19 +162,13 @@ namespace xzh
 					}
 					else if (!tcp_node_ptr->isclient())
 					{
-						//debughelp::safe_debugstr(200, "server: want->seq[%x], data->seq[%x]", seq_next_r, tcp_node_ptr->getseq());
 						do 
 						{
 							if (ipacket_seq == seq_next_r)
 							{
-								//debughelp::safe_debugstr(200, "ipacket:%x, seq_next_s:%x", ipacket_seq, seq_next_r);
-								//debughelp::safe_debugstr(200, "r hit seq ...,call back data ...");
-
 								seq_next_r = ipacket_seq + tcp_node_ptr->getdatalen();
 
 								notify_tcppacket(tcp_node_ptr);
-
-								//debughelp::safe_debugstr(200, "call next data...%x", seq_next_r);
 
 								boost::mutex::scoped_lock lock(map_tcp_queue_data_r_mutex);
 
@@ -206,7 +194,6 @@ namespace xzh
 												break;
 											}
 
-											//seq_next_r = seq_next_r + l_tcp_node_ptr->getdatalen();
 											seq_next_r = l_tcp_node_ptr->getseq() + l_tcp_node_ptr->getdatalen();
 
 											notify_tcppacket(l_tcp_node_ptr);
@@ -256,10 +243,7 @@ namespace xzh
 										break;
 									}
 
-									//seq_next_r = seq_next_r + tcp_node_ptr->getdatalen();
 									seq_next_r = tcp_node_ptr->getseq() + tcp_node_ptr->getdatalen();
-									//boost::mutex::scoped_lock lock(map_tcp_queue_data_r_mutex);
-									//map_tcp_queue_data_r.clear();
 
 									notify_tcppacket(tcp_node_ptr);
 									
@@ -298,6 +282,8 @@ namespace xzh
 		bool notify_tcppacket(tcp_packet_node_ptr tcp_packet_ptr_)
 		{
 			bool bretvalue = false;
+
+			debughelp::safe_debugstr(200, "seq:%08x", tcp_packet_ptr_->getseq());
 
 			for (size_t index_ = 0; index_ < tcp_repacket_hub_.size(); index_ ++)
 			{

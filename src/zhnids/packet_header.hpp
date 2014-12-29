@@ -162,6 +162,8 @@ namespace xzh
 
 				tcp_pakcet_data_.erase(tcp_pakcet_data_.begin(), tcp_pakcet_data_.begin() + iremove_len);
 
+				tcp_tuple_data_[len] = tcp_pakcet_data_.size();
+
 				bretvalue = true;
 
 			} while (false);

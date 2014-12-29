@@ -97,6 +97,53 @@ namespace xzh
 			thread_group_.interrupt_all();
 			return true;
 		}
+
+		bool start_offline(string strfile_path)
+		{
+			bool bretvalue = false;
+			pcap_t *fp = NULL;
+
+			do 
+			{
+				if (strfile_path.empty())
+				{
+					break;
+				}
+
+				string strerror;
+				strerror.resize(PCAP_ERRBUF_SIZE);
+
+				fp = pcap_open_offline(strfile_path.c_str(), (char*)strerror.c_str());
+
+				if (fp == NULL)
+				{
+					debughelp::safe_debugstr(200, "open file error!");
+					break;
+				}
+
+				puser_data l_user_data = new user_data();
+
+				l_user_data->net_device_ptr.reset();
+				l_user_data->innser_ptr = (unsigned long)this;
+
+				int iret = pcap_loop(fp, 0, xzhnids::pcap_handler, (u_char*)l_user_data);
+				if (iret < 0)
+				{
+					debughelp::safe_debugstr(200, "pcap_loop error!");
+					break;
+				}
+
+				bretvalue = true;
+			} while (false);
+
+			if (fp != NULL)
+			{
+				pcap_close(fp);
+			}
+
+			return bretvalue;
+		}
+	public:
 		template <typename TFun>
 		bool add_ipfrag_handler(string strkey, TFun callfun_)
 		{
