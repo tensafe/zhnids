@@ -4,8 +4,6 @@
 #include <string>
 #include <list>
 
-//#include <boost/threadpool.hpp>
-
 #include <zhnids/packet_header.hpp>
 #include <zhnids/stage/outdebug.hpp>
 #include <zhnids/stage/pcap_hub.hpp>
@@ -63,7 +61,6 @@ namespace xzh
 								notify_tcppacket(tcp_node_ptr);
 
 								seq_next_s = ipacket_seq + tcp_node_ptr->getdatalen();
-								//debughelp::safe_debugstr(200, "call next data...%x", seq_next_s);
 
 								boost::mutex::scoped_lock lock(map_tcp_queue_data_s_mutex);
 
@@ -71,7 +68,6 @@ namespace xzh
 								{
 									if (pos->first < seq_next_s)
 									{
-										debughelp::safe_debugstr(200, "in list [%x] < want: [%x]", pos->first, seq_next_s);
 										//直接从MAP中移除
 										do 
 										{
@@ -81,11 +77,9 @@ namespace xzh
 												break;
 											}
 
-											debughelp::safe_debugstr(200, "remove data ....");
 											unsigned int ioffset = seq_next_s - pos->first;
 											if(!l_tcp_node_ptr->remove_data(ioffset))
 											{
-												debughelp::safe_debugstr(200, "remove data %d error!", ioffset);
 												break;
 											}
 
@@ -99,7 +93,6 @@ namespace xzh
 									}
 									else if (pos->first == seq_next_s)
 									{
-										debughelp::safe_debugstr(200, "in list [%x] = want: [%x]", pos->first, seq_next_s);
 										//更新next_seq..
 										tcp_packet_node_ptr l_node_ptr = pos->second;
 										seq_next_s = seq_next_s + l_node_ptr->getdatalen();
@@ -132,11 +125,9 @@ namespace xzh
 										break;
 									}
 
-									debughelp::safe_debugstr(200, "remove data ....");
 									unsigned int ioffset = seq_next_s - ipacket_seq;
 									if(!tcp_node_ptr->remove_data(ioffset))
 									{
-										debughelp::safe_debugstr(200, "remove data %d error!", ioffset);
 										break;
 									}
 
@@ -153,8 +144,6 @@ namespace xzh
 
 							if (ipacket_seq > seq_next_s)
 							{
-								debughelp::safe_debugstr(200, "packet greate than seq_next_s ....need cache data ..");
-								debughelp::safe_debugstr(200, "ipacket:%x, seq_next_s:%x", ipacket_seq, seq_next_s);
 								boost::mutex::scoped_lock lock(map_tcp_queue_data_s_mutex);
 								map_tcp_queue_data_s[ipacket_seq] = tcp_node_ptr;
 							}
@@ -176,7 +165,6 @@ namespace xzh
 								{
 									if (pos->first < seq_next_r)
 									{
-										debughelp::safe_debugstr(200, "r in list [%x] < want: [%x]", pos->first, seq_next_r);
 										//直接从MAP中移除
 										do 
 										{
@@ -186,11 +174,9 @@ namespace xzh
 												break;
 											}
 
-											debughelp::safe_debugstr(200, "r remove data ....");
 											unsigned int ioffset = seq_next_r - pos->first;
 											if(!l_tcp_node_ptr->remove_data(ioffset))
 											{
-												debughelp::safe_debugstr(200, "r remove data %d error!", ioffset);
 												break;
 											}
 
@@ -204,19 +190,16 @@ namespace xzh
 									}
 									else if (pos->first == seq_next_r)
 									{
-										debughelp::safe_debugstr(200, "r in list [%x] = want: [%x]", pos->first, seq_next_r);
 										//更新next_seq..
 										tcp_packet_node_ptr l_node_ptr = pos->second;
 										seq_next_r = seq_next_r + l_node_ptr->getdatalen();
 										//回调数据,从map中移除
 										//call next data...
-										debughelp::safe_debugstr(200, "call next data...%x", seq_next_r);
 										notify_tcppacket(l_node_ptr);
 										map_tcp_queue_data_r.erase(pos ++);
 									}
 									else if (pos->first > seq_next_r)
 									{
-										debughelp::safe_debugstr(200, "r in list [%x] > want: [%x]", pos->first, seq_next_r);
 										//next ...break..
 										break;
 									}
@@ -226,9 +209,6 @@ namespace xzh
 
 							if (ipacket_seq < seq_next_r)
 							{
-								debughelp::safe_debugstr(200, "r packet less than seq_next_r, ignore? resend?? .....");
-								debughelp::safe_debugstr(200, "ipacket:%x, seq_next_s:%x", ipacket_seq, seq_next_r);
-
 								do 
 								{
 									if (seq_next_r >= ipacket_seq + tcp_node_ptr->getdatalen())
@@ -239,7 +219,6 @@ namespace xzh
 									unsigned int ioffset = seq_next_r - ipacket_seq;
 									if(!tcp_node_ptr->remove_data(ioffset))
 									{
-										debughelp::safe_debugstr(200, "remove data %d error!", ioffset);
 										break;
 									}
 
@@ -254,8 +233,6 @@ namespace xzh
 
 							if (ipacket_seq > seq_next_r)
 							{
-								debughelp::safe_debugstr(200, "r packet greate than seq_next_r ....need cache data ..");
-								debughelp::safe_debugstr(200, "ipacket:%x, seq_next_s:%x", ipacket_seq, seq_next_r);
 								boost::mutex::scoped_lock lock(map_tcp_queue_data_r_mutex);
 								map_tcp_queue_data_r[ipacket_seq] = tcp_node_ptr;
 							}
@@ -282,8 +259,6 @@ namespace xzh
 		bool notify_tcppacket(tcp_packet_node_ptr tcp_packet_ptr_)
 		{
 			bool bretvalue = false;
-
-			debughelp::safe_debugstr(200, "seq:%08x", tcp_packet_ptr_->getseq());
 
 			for (size_t index_ = 0; index_ < tcp_repacket_hub_.size(); index_ ++)
 			{
@@ -334,7 +309,6 @@ namespace xzh
 			{
 				if (!tcp_queue_node_)
 				{
-					debughelp::safe_debugstr(200, "tcp_queue_node nil");
 					break;
 				}
 
@@ -342,7 +316,6 @@ namespace xzh
 
 				if (!bretvalue)
 				{
-					debughelp::safe_debugstr(200, "add error!");
 					break;
 				}
 
@@ -352,7 +325,6 @@ namespace xzh
 					bretvalue = tcp_queue_mn_.del(tcp_queue_node_->get_tuple_hash());
 					if (!bretvalue)
 					{
-						debughelp::safe_debugstr(200, "del error!");
 					}
 					break;
 				}
@@ -426,22 +398,18 @@ namespace xzh
 			{
 				if (!tcp_queue_mn_ptr)
 				{
-					debughelp::safe_debugstr(200, "tcp_queue_mn_ptr nil");
 					break;
 				}
 				if (!tcp_queue_node_ptr_)
 				{
-					debughelp::safe_debugstr(200, "tcp_queue_node_ptr nil");
 					break;
 				}
 
 				if(tcp_queue_mn_ptr->dispatch(tcp_queue_node_ptr_))
 				{
-					//debughelp::safe_debugstr(200, "queue mn dispatch ok!");
 				}
 				else
 				{
-					debughelp::safe_debugstr(200, "queue mn dispatch error!");
 				}
 
 			} while (false);

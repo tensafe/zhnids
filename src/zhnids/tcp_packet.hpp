@@ -108,7 +108,6 @@ namespace xzh
 
 				if ((iphdr_->ip_src.s_addr == 0) || (iphdr_->ip_dst.s_addr == 0))
 				{
-					debughelp::safe_debugstr(200, "ip addr error!");
 					break;
 				}
 
@@ -171,7 +170,6 @@ namespace xzh
 						}
 						else
 						{
-							debughelp::safe_debugstr(200, "new tcp connect insert error..[si:%08x,sp:%d,di:%08x,dp:%d]", l_tcp_key.src_ip, l_tcp_key.src_port, l_tcp_key.dst_ip, l_tcp_key.dst_port);
 						}
 					}
 					else
@@ -189,14 +187,12 @@ namespace xzh
 				{
 					if (uipdatalen < (uiphdrlen + sizeof(xzhnet_tcp_hdr)))
 					{
-						debughelp::safe_debugstr(200, "tcp len error!");
 						break;
 					}
 
 					datalen = uipdatalen - uiphdrlen - (tcphdr_->th_off << 2);
 					if (datalen < 0)
 					{
-						debughelp::safe_debugstr(200, "tcp data len error!");
 						break;
 					}
 				}
@@ -233,25 +229,21 @@ namespace xzh
 
 						if (tcp_stream_find_->client_.tcp_state_ != TCP_SYN_SENT)
 						{
-							debughelp::safe_debugstr(200, "client tcp state error");
 							break;
 						}
 
 						if (tcp_stream_find_->server_.tcp_state_ != TCP_CLOSE)
 						{
-							debughelp::safe_debugstr(200, "server tcp state error");
 							break;
 						}
 
 						if (!(tcphdr_->th_flags & TH_ACK))
 						{
-							debughelp::safe_debugstr(200, "tcp flags state error");
 							break;
 						}
 
 						if(tcp_stream_find_->client_.seq != ntohl(tcphdr_->th_ack))
 						{
-							debughelp::safe_debugstr(200, "stream seq and tcp ack not same");
 							break;
 						}
 
@@ -311,8 +303,6 @@ namespace xzh
 
 				if ((tcphdr_->th_flags & TH_RST))
 				{
-					debughelp::safe_debugstr(200, "rcv rst data...,delete tcp stream..");
-
 					tcp_packet_node_ptr l_tcp_queue_node_ptr = tcp_packet_node_ptr(new tcp_packet_node(tcp_stream_find_->tcp_key_.src_ip,
 						tcp_stream_find_->tcp_key_.dst_ip,
 						tcp_stream_find_->tcp_key_.src_port,
@@ -364,7 +354,6 @@ namespace xzh
 				{
 					if ((datalen == 1) && (*(data_.rbegin()) == 0x00) && ((ntohl(tcphdr_->th_seq) + 1) == snd->seq))
 					{
-						debughelp::safe_debugstr(200, "keep alive packet...ignore");
 						biskeep_alive = true;
 					}
 					else

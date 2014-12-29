@@ -88,7 +88,7 @@ namespace xzh
 					if (*pos != NULL)
 					{
 						pcap_breakloop(*pos);
-						pcap_close(*pos);
+						//pcap_close(*pos);
 					}
 				}
 

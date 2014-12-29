@@ -228,20 +228,17 @@ namespace xzh
 			{
 				if (len < sizeof(xzhnet_ipv4_hdr))
 				{
-					debughelp::safe_debugstr(200, "len too small.. hdr error");
 					break;
 				}
 				xzhnet_ipv4_hdr* iphdr_ = (xzhnet_ipv4_hdr*)&data_[0];
 
 				if (iphdr_->ip_hl < 5)
 				{
-					debughelp::safe_debugstr(200, "inner header len error");
 					break;
 				}
 
 				if (iphdr_->ip_v != 4)
 				{
-					debughelp::safe_debugstr(200, "not ip4");
 					break;
 				}
 
@@ -251,13 +248,11 @@ namespace xzh
 				{
 					if (len < ip_r_len)
 					{
-						debughelp::safe_debugstr(200, "ip_len > len");
 						break;
 					}
 
 					if(ip_r_len < iphdr_->ip_hl << 2)
 					{
-						debughelp::safe_debugstr(200, "ip_len < hd_len");
 						break;
 					}
 				}
@@ -267,7 +262,6 @@ namespace xzh
 				{
 					if (checksum(&data_[0], iphdr_->ip_hl << 2) != 0)
 					{
-						debughelp::safe_debugstr(200, "check sum error");
 						break;
 					}
 				}
@@ -314,8 +308,6 @@ namespace xzh
 
 				if (((uflag & IP_MF) == 0) && (uoffset != 0))
 				{
-					debughelp::safe_debugstr(200, "ip_id[%d] mf:0 and uoffset:%d last?", uip_id, uoffset << 3);
-
 					process_ipfragment::ip_key ip_key_;
 					ip_key_.ip_id = ntohs(iphdr_->ip_id);
 					ip_key_.ip_op = ntohs(iphdr_->ip_p);
@@ -330,7 +322,6 @@ namespace xzh
 
 					if (isdone)
 					{
-						debughelp::safe_debugstr(200, "ip fragment packet end...");
 						process_ipfragment::ip_fragment_data l_ippacket_data;
 						process_ipfragment_.get(ip_key_, l_ippacket_data);
 
@@ -359,8 +350,6 @@ namespace xzh
 
 				if (((uflag & IP_MF) != 0) && (uoffset == 0))
 				{
-					debughelp::safe_debugstr(200, "ip_id[%d] mf !=0 and uoffset:0 first pos?", uip_id);
-
 					process_ipfragment::ip_key ip_key_;
 					ip_key_.ip_id = ntohs(iphdr_->ip_id);
 					ip_key_.ip_op = ntohs(iphdr_->ip_p);
@@ -373,8 +362,6 @@ namespace xzh
 
 					if (isdone)
 					{
-						debughelp::safe_debugstr(200, "ip fragment packet end...");
-
 						process_ipfragment::ip_fragment_data l_ippacket_data;
 						process_ipfragment_.get(ip_key_, l_ippacket_data);
 
@@ -403,8 +390,6 @@ namespace xzh
 
 				if (((uflag & IP_MF) != 0) && (uoffset != 0))
 				{
-					debughelp::safe_debugstr(200, "ip_id[%d] mf !=0 and uoffset=%d fragment normal", uip_id, uoffset << 3);
-
 					process_ipfragment::ip_key ip_key_;
 					ip_key_.ip_id = ntohs(iphdr_->ip_id);
 					ip_key_.ip_op = ntohs(iphdr_->ip_p);
@@ -419,7 +404,6 @@ namespace xzh
 
 					if (isdone)
 					{
-						debughelp::safe_debugstr(200, "ip fragment packet end...");
 						process_ipfragment::ip_fragment_data l_ippacket_data;
 						process_ipfragment_.get(ip_key_, l_ippacket_data);
 
@@ -445,7 +429,6 @@ namespace xzh
 					break;
 				}
 
-				debughelp::safe_debugstr(200, "ip_id[%d] has more fragment or ....", uip_id);
 			} while (false);
 			return false;
 		}
