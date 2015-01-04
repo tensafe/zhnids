@@ -5,13 +5,13 @@
 #include <string>
 #include <boost/shared_ptr.hpp>
 #include <boost/tuple/tuple.hpp>
-#include <boost/asio/yield.hpp>
 #include <boost/logic/tribool.hpp>
 #include <boost/algorithm/hex.hpp>
 #include <boost/lexical_cast.hpp>
-
 #include <zhnids/stage/map_ptr_manager.hpp>
+#include <zhnids/stage/pcap_hub.hpp>
 
+#include <boost/asio/yield.hpp>
 using namespace std;
 
 namespace xzh
@@ -110,6 +110,7 @@ namespace xzh
 
 	typedef boost::shared_ptr<http_packet_data> http_packet_data_ptr;
 
+
 	class http_parse : public boost::asio::coroutine
 	{
 	public:
@@ -185,112 +186,122 @@ namespace xzh
 		{
 			reenter(this)
 			{
-				res.status_code = 0;
-				res.status.clear();
-				res.http_version_major = 0;
-				res.http_version_minor = 0;
-				res.content.clear();
-				res.headers.clear();
-
-				content_length_ = 0;
-				content_length_name_ = "Content-Length";
-				ishave_content_length = false;
-				transfer_encoding = "Transfer-Encoding";
-
-				if (c != 'H') return false;
-				yield return boost::indeterminate;
-				if (c != 'T') return false;
-				yield return boost::indeterminate;
-				if (c != 'T') return false;
-				yield return boost::indeterminate;
-				if (c != 'P') return false;
-				yield return boost::indeterminate;
-
-				// Slash.
-				if (c != '/') return false;
-				yield return boost::indeterminate;
-
-				// Major version number.
-				if (!is_digit(c)) return false;
-				while (is_digit(c))
+				while(true)
 				{
-					res.http_version_major = res.http_version_major * 10 + c - '0';
+
+					res.status_code = 0;
+					res.status.clear();
+					res.http_version_major = 0;
+					res.http_version_minor = 0;
+					res.content.clear();
+					res.headers.clear();
+
+					content_length_ = 0;
+					content_length_name_ = "Content-Length";
+					ishave_content_length = false;
+					transfer_encoding = "Transfer-Encoding";
+
+					if (c != 'H') return false;
 					yield return boost::indeterminate;
-				}
-
-				// Dot.
-				if (c != '.') return false;
-				yield return boost::indeterminate;
-
-				// Minor version number.
-				if (!is_digit(c)) return false;
-				while (is_digit(c))
-				{
-					res.http_version_minor = res.http_version_minor * 10 + c - '0';
+					if (c != 'T') return false;
 					yield return boost::indeterminate;
-				}
-
-				if (c != ' ') return false;
-				yield return boost::indeterminate;
-
-				if (!is_digit(c)) return false;
-				while (is_digit(c))
-				{
-					res.status_code = res.status_code * 10 + c - '0';
+					if (c != 'T') return false;
 					yield return boost::indeterminate;
-				}
-
-				if (c != ' ') return false;
-				yield return boost::indeterminate;
-
-				while (is_char(c) && !is_ctl(c) && !is_tspecial(c) && c != '\r')
-				{
-					res.status.push_back(c);
+					if (c != 'P') return false;
 					yield return boost::indeterminate;
-				}
-				if (res.status.empty())
-					return false;
 
-				// CRLF.
-				if (c != '\r') return false;
-				yield return boost::indeterminate;
-				if (c != '\n') return false;
-				yield return boost::indeterminate;
+					// Slash.
+					if (c != '/') return false;
+					yield return boost::indeterminate;
 
-				// Headers.
-				while ((is_char(c) && !is_ctl(c) && !is_tspecial(c) && c != '\r')
-					|| (c == ' ' || c == '\t'))
-				{
-					if (c == ' ' || c == '\t')
+					// Major version number.
+					if (!is_digit(c)) return false;
+					while (is_digit(c))
 					{
-						// Leading whitespace. Must be continuation of previous header's value.
-						if (res.headers.empty()) return false;
-						while (c == ' ' || c == '\t')
-							yield return boost::indeterminate;
+						res.http_version_major = res.http_version_major * 10 + c - '0';
+						yield return boost::indeterminate;
 					}
-					else
-					{
-						// Start the next header.
-						res.headers.push_back(header());
 
-						// Header name.
-						while (is_char(c) && !is_ctl(c) && !is_tspecial(c) && c != ':')
+					// Dot.
+					if (c != '.') return false;
+					yield return boost::indeterminate;
+
+					// Minor version number.
+					if (!is_digit(c)) return false;
+					while (is_digit(c))
+					{
+						res.http_version_minor = res.http_version_minor * 10 + c - '0';
+						yield return boost::indeterminate;
+					}
+
+					if (c != ' ') return false;
+					yield return boost::indeterminate;
+
+					if (!is_digit(c)) return false;
+					while (is_digit(c))
+					{
+						res.status_code = res.status_code * 10 + c - '0';
+						yield return boost::indeterminate;
+					}
+
+					if (c != ' ') return false;
+					yield return boost::indeterminate;
+
+					while (is_char(c) && !is_ctl(c) && !is_tspecial(c) && c != '\r')
+					{
+						res.status.push_back(c);
+						yield return boost::indeterminate;
+					}
+					if (res.status.empty())
+						return false;
+
+					// CRLF.
+					if (c != '\r') return false;
+					yield return boost::indeterminate;
+					if (c != '\n') return false;
+					yield return boost::indeterminate;
+
+					// Headers.
+					while ((is_char(c) && !is_ctl(c) && !is_tspecial(c) && c != '\r')
+						|| (c == ' ' || c == '\t'))
+					{
+						if (c == ' ' || c == '\t')
 						{
-							res.headers.back().name.push_back(c);
+							// Leading whitespace. Must be continuation of previous header's value.
+							if (res.headers.empty()) return false;
+							while (c == ' ' || c == '\t')
+								yield return boost::indeterminate;
+						}
+						else
+						{
+							// Start the next header.
+							res.headers.push_back(header());
+
+							// Header name.
+							while (is_char(c) && !is_ctl(c) && !is_tspecial(c) && c != ':')
+							{
+								res.headers.back().name.push_back(c);
+								yield return boost::indeterminate;
+							}
+
+							// Colon and space separates the header name from the header value.
+							if (c != ':') return false;
+							yield return boost::indeterminate;
+							if (c != ' ') return false;
 							yield return boost::indeterminate;
 						}
 
-						// Colon and space separates the header name from the header value.
-						if (c != ':') return false;
-						yield return boost::indeterminate;
-						if (c != ' ') return false;
-						yield return boost::indeterminate;
-					}
+						// Header value.
+						while (is_char(c) && !is_ctl(c) && c != '\r')
+						{
+							res.headers.back().value.push_back(c);
+							yield return boost::indeterminate;
+						}
 
-					// Header value.
-					while (is_char(c) && !is_ctl(c) && c != '\r')
-					{
-						res.headers.back().value.push_back(c);
+						// CRLF.
+						if (c != '\r') return false;
+						yield return boost::indeterminate;
+						if (c != '\n') return false;
 						yield return boost::indeterminate;
 					}
 
@@ -298,95 +309,91 @@ namespace xzh
 					if (c != '\r') return false;
 					yield return boost::indeterminate;
 					if (c != '\n') return false;
-					yield return boost::indeterminate;
-				}
 
-				// CRLF.
-				if (c != '\r') return false;
-				yield return boost::indeterminate;
-				if (c != '\n') return false;
-
-				for (std::size_t i = 0; i < res.headers.size(); ++i)
-				{
-					if (headers_equal(res.headers[i].name, content_length_name_))
+					for (std::size_t i = 0; i < res.headers.size(); ++i)
 					{
-						ishave_content_length = true;
+						if (headers_equal(res.headers[i].name, content_length_name_))
+						{
+							ishave_content_length = true;
 
-						try
-						{
-							content_length_ = boost::lexical_cast<std::size_t>(res.headers[i].value);
-						}
-						catch (boost::bad_lexical_cast&)
-						{
-							return false;
-						}
-						break;
-					}
-
-					if (headers_equal(res.headers[i].name, transfer_encoding))
-					{
-						ishave_content_length = false;
-						break;
-					}
-				}
-
-				// Content.
-				if (ishave_content_length)
-				{
-					while (res.content.size() < content_length_)
-					{
-						yield return boost::indeterminate;
-						res.content.push_back(c);
-					}
-				}
-				else
-				{
-					yield return boost::indeterminate;
-					while(true)
-					{
-						chunk_len.clear();
-						while (is_char(c) && !is_ctl(c) && c != '\r')
-						{
-							chunk_len.push_back(c);
-							yield return boost::indeterminate;
-						}
-
-						try
-						{
-							std::string strhex_value;
-							boost::algorithm::unhex(chunk_len.begin(), chunk_len.end(), inserter(strhex_value, strhex_value.end()));
-							content_length_ = 0;
-							memcpy(&content_length_, strhex_value.c_str(), min(strhex_value.size(), sizeof(int)));
-						}
-						catch (...)
-						{
-							content_length_ = 0;
-						}
-
-						if(content_length_ == 0)
-						{
+							try
+							{
+								content_length_ = boost::lexical_cast<std::size_t>(res.headers[i].value);
+							}
+							catch (boost::bad_lexical_cast&)
+							{
+								return false;
+							}
 							break;
 						}
 
-						content_length_ += res.content.size();
+						if (headers_equal(res.headers[i].name, transfer_encoding))
+						{
+							ishave_content_length = false;
+							break;
+						}
+					}
 
-
-						if (c != '\r') return false;
-						yield return boost::indeterminate;
-						if (c != '\n') return false;
-						yield return boost::indeterminate;
-
+					// Content.
+					if (ishave_content_length)
+					{
 						while (res.content.size() < content_length_)
 						{
+							yield return boost::indeterminate;
 							res.content.push_back(c);
+						}
+					}
+					else
+					{
+						yield return boost::indeterminate;
+						while(true)
+						{
+							chunk_len.clear();
+							while (is_char(c) && !is_ctl(c) && c != '\r')
+							{
+								chunk_len.push_back(c);
+								yield return boost::indeterminate;
+							}
+
+							try
+							{
+								std::string strhex_value;
+								boost::algorithm::unhex(chunk_len.begin(), chunk_len.end(), inserter(strhex_value, strhex_value.end()));
+								content_length_ = 0;
+								memcpy(&content_length_, strhex_value.c_str(), min(strhex_value.size(), sizeof(int)));
+							}
+							catch (...)
+							{
+								content_length_ = 0;
+							}
+
+							if(content_length_ == 0)
+							{
+								break;
+							}
+
+							content_length_ += res.content.size();
+
+
+							if (c != '\r') return false;
+							yield return boost::indeterminate;
+							if (c != '\n') return false;
+							yield return boost::indeterminate;
+
+							while (res.content.size() < content_length_)
+							{
+								res.content.push_back(c);
+								yield return boost::indeterminate;
+							}
+
+							if (c != '\r') return false;
+							yield return boost::indeterminate;
+							if (c != '\n') return false;
 							yield return boost::indeterminate;
 						}
-
-						if (c != '\r') return false;
-						yield return boost::indeterminate;
-						if (c != '\n') return false;
-						yield return boost::indeterminate;
 					}
+
+					yield return true;
 				}
 			}
 			return true;
@@ -422,114 +429,73 @@ namespace xzh
 		{
 			reenter (this)
 			{
-				req.method.clear();
-				req.uri.clear();
-				req.http_version_major = 0;
-				req.http_version_minor = 0;
-				req.headers.clear();
-				req.content.clear();
-				content_length_ = 0;
-				content_length_name_ = "Content-Length";
-
-				// Request method.
-				while (is_char(c) && !is_ctl(c) && !is_tspecial(c) && c != ' ')
+				while(true)
 				{
-					req.method.push_back(c);
-					yield return boost::indeterminate;
-				}
-				if (req.method.empty())
-					return false;
+					req.method.clear();
+					req.uri.clear();
+					req.http_version_major = 0;
+					req.http_version_minor = 0;
+					req.headers.clear();
+					req.content.clear();
+					content_length_ = 0;
+					content_length_name_ = "Content-Length";
 
-				// Space.
-				if (c != ' ') return false;
-				yield return boost::indeterminate;
-
-				// URI.
-				while (!is_ctl(c) && c != ' ')
-				{
-					req.uri.push_back(c);
-					yield return boost::indeterminate;
-				}
-				if (req.uri.empty()) return false;
-
-				// Space.
-				if (c != ' ') return false;
-				yield return boost::indeterminate;
-
-				// HTTP protocol identifier.
-				if (c != 'H') return false;
-				yield return boost::indeterminate;
-				if (c != 'T') return false;
-				yield return boost::indeterminate;
-				if (c != 'T') return false;
-				yield return boost::indeterminate;
-				if (c != 'P') return false;
-				yield return boost::indeterminate;
-
-				// Slash.
-				if (c != '/') return false;
-				yield return boost::indeterminate;
-
-				// Major version number.
-				if (!is_digit(c)) return false;
-				while (is_digit(c))
-				{
-					req.http_version_major = req.http_version_major * 10 + c - '0';
-					yield return boost::indeterminate;
-				}
-
-				// Dot.
-				if (c != '.') return false;
-				yield return boost::indeterminate;
-
-				// Minor version number.
-				if (!is_digit(c)) return false;
-				while (is_digit(c))
-				{
-					req.http_version_minor = req.http_version_minor * 10 + c - '0';
-					yield return boost::indeterminate;
-				}
-
-				// CRLF.
-				if (c != '\r') return false;
-				yield return boost::indeterminate;
-				if (c != '\n') return false;
-				yield return boost::indeterminate;
-
-				// Headers.
-				while ((is_char(c) && !is_ctl(c) && !is_tspecial(c) && c != '\r')
-					|| (c == ' ' || c == '\t'))
-				{
-					if (c == ' ' || c == '\t')
+					// Request method.
+					while (is_char(c) && !is_ctl(c) && !is_tspecial(c) && c != ' ')
 					{
-						// Leading whitespace. Must be continuation of previous header's value.
-						if (req.headers.empty()) return false;
-						while (c == ' ' || c == '\t')
-							yield return boost::indeterminate;
-					}
-					else
-					{
-						// Start the next header.
-						req.headers.push_back(header());
-
-						// Header name.
-						while (is_char(c) && !is_ctl(c) && !is_tspecial(c) && c != ':')
-						{
-							req.headers.back().name.push_back(c);
-							yield return boost::indeterminate;
-						}
-
-						// Colon and space separates the header name from the header value.
-						if (c != ':') return false;
+						req.method.push_back(c);
 						yield return boost::indeterminate;
-						if (c != ' ') return false;
+					}
+					if (req.method.empty())
+						return false;
+
+					// Space.
+					if (c != ' ') return false;
+					yield return boost::indeterminate;
+
+					// URI.
+					while (!is_ctl(c) && c != ' ')
+					{
+						req.uri.push_back(c);
+						yield return boost::indeterminate;
+					}
+					if (req.uri.empty()) return false;
+
+					// Space.
+					if (c != ' ') return false;
+					yield return boost::indeterminate;
+
+					// HTTP protocol identifier.
+					if (c != 'H') return false;
+					yield return boost::indeterminate;
+					if (c != 'T') return false;
+					yield return boost::indeterminate;
+					if (c != 'T') return false;
+					yield return boost::indeterminate;
+					if (c != 'P') return false;
+					yield return boost::indeterminate;
+
+					// Slash.
+					if (c != '/') return false;
+					yield return boost::indeterminate;
+
+					// Major version number.
+					if (!is_digit(c)) return false;
+					while (is_digit(c))
+					{
+						req.http_version_major = req.http_version_major * 10 + c - '0';
 						yield return boost::indeterminate;
 					}
 
-					// Header value.
-					while (is_char(c) && !is_ctl(c) && c != '\r')
+					// Dot.
+					if (c != '.') return false;
+					yield return boost::indeterminate;
+
+					// Minor version number.
+					if (!is_digit(c)) return false;
+					while (is_digit(c))
 					{
-						req.headers.back().value.push_back(c);
+						req.http_version_minor = req.http_version_minor * 10 + c - '0';
 						yield return boost::indeterminate;
 					}
 
@@ -538,36 +504,83 @@ namespace xzh
 					yield return boost::indeterminate;
 					if (c != '\n') return false;
 					yield return boost::indeterminate;
-				}
 
-				// CRLF.
-				if (c != '\r') return false;
-				yield return boost::indeterminate;
-				if (c != '\n') return false;
-
-				// Check for optional Content-Length header.
-				for (std::size_t i = 0; i < req.headers.size(); ++i)
-				{
-					if (headers_equal(req.headers[i].name, content_length_name_))
+					// Headers.
+					while ((is_char(c) && !is_ctl(c) && !is_tspecial(c) && c != '\r')
+						|| (c == ' ' || c == '\t'))
 					{
-						try
+						if (c == ' ' || c == '\t')
 						{
-							content_length_ =
-								boost::lexical_cast<std::size_t>(req.headers[i].value);
+							// Leading whitespace. Must be continuation of previous header's value.
+							if (req.headers.empty()) return false;
+							while (c == ' ' || c == '\t')
+								yield return boost::indeterminate;
 						}
-						catch (boost::bad_lexical_cast&)
+						else
 						{
-							return false;
+							// Start the next header.
+							req.headers.push_back(header());
+
+							// Header name.
+							while (is_char(c) && !is_ctl(c) && !is_tspecial(c) && c != ':')
+							{
+								req.headers.back().name.push_back(c);
+								yield return boost::indeterminate;
+							}
+
+							// Colon and space separates the header name from the header value.
+							if (c != ':') return false;
+							yield return boost::indeterminate;
+							if (c != ' ') return false;
+							yield return boost::indeterminate;
+						}
+
+						// Header value.
+						while (is_char(c) && !is_ctl(c) && c != '\r')
+						{
+							req.headers.back().value.push_back(c);
+							yield return boost::indeterminate;
+						}
+
+						// CRLF.
+						if (c != '\r') return false;
+						yield return boost::indeterminate;
+						if (c != '\n') return false;
+						yield return boost::indeterminate;
+					}
+
+					// CRLF.
+					if (c != '\r') return false;
+					yield return boost::indeterminate;
+					if (c != '\n') return false;
+
+					// Check for optional Content-Length header.
+					for (std::size_t i = 0; i < req.headers.size(); ++i)
+					{
+						if (headers_equal(req.headers[i].name, content_length_name_))
+						{
+							try
+							{
+								content_length_ =
+									boost::lexical_cast<std::size_t>(req.headers[i].value);
+							}
+							catch (boost::bad_lexical_cast&)
+							{
+								return false;
+							}
 						}
 					}
+
+					// Content.
+					while (req.content.size() < content_length_)
+					{
+						yield return boost::indeterminate;
+						req.content.push_back(c);
+					}
+
+					yield return true;
 				}
 
-				// Content.
-				while (req.content.size() < content_length_)
-				{
-					yield return boost::indeterminate;
-					req.content.push_back(c);
-				}
 			}
 
 			return true;
@@ -606,7 +619,7 @@ namespace xzh
 					yield return boost::indeterminate;
 				}
 
-				if(l_tcp_packet_node_ptr->getstate() == tcp_data)
+				while(l_tcp_packet_node_ptr->getstate() == tcp_data)
 				{
 					if (l_tcp_packet_node_ptr->isclient())
 					{
@@ -622,7 +635,6 @@ namespace xzh
 								return false;
 							}
 
-							//根据注册KEY，判断是否需要继续组包
 							if (boost::indeterminate(valid_request_))
 							{
 								yield return valid_request_;
@@ -665,8 +677,9 @@ namespace xzh
 					}
 
 					notify_handler(l_tcp_packet_node_ptr, http_packet_data_ptr_);
-				}
 
+					yield return true;
+				}
 
 				if ((l_tcp_packet_node_ptr->getstate() == tcp_end)
 					|| (l_tcp_packet_node_ptr->getstate() == tcp_ending))
@@ -753,6 +766,10 @@ namespace xzh
 		http_map_session_ptr http_map_session_ptr_;
 		http_packet_data_hub http_packet_data_hub_;
 	};
+
+
 };
+
+#include <boost/asio/unyield.hpp>
 
 #endif

@@ -47,10 +47,10 @@ namespace xzh
 			do 
 			{
 				string l_out_debug;
-				l_out_debug.resize(max_size);
+				l_out_debug.resize(max_size + 1);
 				va_list l_va_list;
 				va_start(l_va_list, lpformat);
-				StringCchVPrintfA((char*)l_out_debug.c_str(), max_size, lpformat, l_va_list);
+				StringCchVPrintfA((char*)l_out_debug.c_str(), max_size + 1, lpformat, l_va_list);
 				va_end(l_va_list);
 				l_out_debug.resize(strlen(l_out_debug.c_str()));
 	

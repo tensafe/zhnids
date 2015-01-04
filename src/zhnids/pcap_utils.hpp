@@ -270,7 +270,7 @@ namespace xzh
 
 					if(pkt_data[12] != 8 && pkt_data[13] != 0)
 					{
-						debughelp::safe_debugstr(200, "12 not 8 13 not 0");
+						//debughelp::safe_debugstr(200, "12 not 8 13 not 0");
 						break;
 					}
 
