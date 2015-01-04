@@ -100,12 +100,10 @@ namespace xzh
 										//todo:
 										//call back....
 										notify_tcppacket(l_node_ptr);
-										debughelp::safe_debugstr(200, "call next data...%x", seq_next_s);
 										map_tcp_queue_data_s.erase(pos ++);
 									}
 									else if (pos->first > seq_next_s)
 									{
-										debughelp::safe_debugstr(200, "in list [%x] > want: [%x]", pos->first, seq_next_s);
 										//next ...break..
 										break;
 									}
@@ -115,9 +113,6 @@ namespace xzh
 
 							if (ipacket_seq < seq_next_s)
 							{
-								debughelp::safe_debugstr(200, "packet less than seq_next_s, ignore? resend?? .....");
-								debughelp::safe_debugstr(200, "ipacket:%x, seq_next_s:%x", ipacket_seq, seq_next_s);
-
 								do 
 								{
 									if (seq_next_s >= ipacket_seq + tcp_node_ptr->getdatalen())

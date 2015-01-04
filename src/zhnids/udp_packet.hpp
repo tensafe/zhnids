@@ -69,7 +69,7 @@ namespace xzh
 					ntohl(iphdr_->ip_dst.S_un.S_addr),
 					ntohs(udphdr_->uh_sport),
 					ntohs(udphdr_->uh_dport),
-					uudp_len));
+					uudp_len - sizeof(xzhnet_udp_hdr)));
 
 				if (!l_udp_packet_ptr_)
 				{

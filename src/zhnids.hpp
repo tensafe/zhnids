@@ -10,6 +10,7 @@
 #include <zhnids/packet_header.hpp>
 #include <zhnids/tcp_packet.hpp>
 #include <zhnids/tcp_repacket.hpp>
+#include <zhnids/http_packet.hpp>
 #include <zhnids/udp_packet.hpp>
 
 
