@@ -287,7 +287,10 @@ namespace xzh
 							// Colon and space separates the header name from the header value.
 							if (c != ':') return false;
 							yield return boost::indeterminate;
-							if (c != ' ') return false;
+							if (c != ' ')
+							{
+								//return false;
+							}
 							yield return boost::indeterminate;
 						}
 
