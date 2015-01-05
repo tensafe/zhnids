@@ -602,13 +602,15 @@ namespace xzh
 	};
 
 	typedef pcap_hub_impl<string, bool (tcp_packet_node_ptr, http_packet_data_ptr)> http_packet_data_hub;
+	typedef pcap_hub_impl<string, bool (tcp_packet_node_ptr)> http_packet_filter_hub;
 
 	class http_session : public session,
 		public boost::asio::coroutine
 	{
 	public:
-		explicit http_session(http_packet_data_hub & _http_packet_data_hub_)
-			:http_packet_data_hub_(_http_packet_data_hub_)
+		explicit http_session(http_packet_data_hub & _http_packet_data_hub_, http_packet_filter_hub & _http_packet_filter_hub_)
+			:http_packet_data_hub_(_http_packet_data_hub_),
+			http_packet_filter_hub_(_http_packet_filter_hub_)
 		{
 
 		}
@@ -628,6 +630,12 @@ namespace xzh
 					{
 						http_packet_data_ptr_ = http_packet_data_ptr(new http_packet_data());
 						http_packet_data_ptr_->set_http_data_type() = http_packet_data::http_request_type;
+
+						//增加一次数据开始传输时回调接口，允许过滤掉部分数据...
+						if(!filter_handler(l_tcp_packet_node_ptr))
+						{
+							return false;
+						}
 
 						while(true)
 						{
@@ -716,12 +724,39 @@ namespace xzh
 			return bretvalue;
 		}
 
+		bool filter_handler(tcp_packet_node_ptr l_tcp_packet_node_ptr)
+		{
+			bool bretvalue = true;
+
+			for (size_t index_ = 0; index_ < http_packet_filter_hub_.size(); index_ ++)
+			{
+				http_packet_filter_hub::return_type_ptr temp_ = http_packet_filter_hub_[index_];
+				if (!temp_)
+				{
+					continue;
+				}
+
+				if((*temp_)(l_tcp_packet_node_ptr))
+				{
+					bretvalue = true;
+				}
+				else
+				{
+					bretvalue = false;
+					break;
+				}
+			}
+
+			return bretvalue;
+		}
+
 	private:
 		http_packet_data_ptr http_packet_data_ptr_;
 		http_request_parse http_request_parse_;
 		http_response_parse http_response_parse_;
 		boost::tribool valid_request_;
 		http_packet_data_hub &http_packet_data_hub_;
+		http_packet_filter_hub &http_packet_filter_hub_;
 	};
 
 	typedef map_ptr_manager<unsigned long, http_session> http_map_session_ptr;
@@ -732,25 +767,31 @@ namespace xzh
 	public:
 		bool http_handler(xzh::tcp_packet_node_ptr l_tcp_packet_node_ptr)
 		{
-			unsigned long ihash = l_tcp_packet_node_ptr->get_tuple_hash();
-
-			http_map_session_ptr::shared_impl_ptr l_session_ptr = http_map_session_ptr_.get(l_tcp_packet_node_ptr->get_tuple_hash());
-
-			if (!l_session_ptr)
+			do 
 			{
-				l_session_ptr = http_map_session_ptr::shared_impl_ptr(new http_session(http_packet_data_hub_));
-				http_map_session_ptr_.add(ihash, l_session_ptr);
-			}
+				unsigned long ihash = l_tcp_packet_node_ptr->get_tuple_hash();
 
-			boost::tribool bstatus;
+				http_map_session_ptr::shared_impl_ptr l_session_ptr = http_map_session_ptr_.get(l_tcp_packet_node_ptr->get_tuple_hash());
 
-			bstatus = l_session_ptr->switch_packet(l_tcp_packet_node_ptr);
+				if (!l_session_ptr && (l_tcp_packet_node_ptr->getstate() == tcp_connect))
+				{
+					l_session_ptr = http_map_session_ptr::shared_impl_ptr(new http_session(http_packet_data_hub_, http_packet_filter_hub_));
+					http_map_session_ptr_.add(ihash, l_session_ptr);
+				}
 
-			if (!bstatus)
-			{
-				http_map_session_ptr_.del(l_tcp_packet_node_ptr->get_tuple_hash());
-			}
+				if (!l_session_ptr)
+				{
+					break;
+				}
 
+				boost::tribool bstatus = l_session_ptr->switch_packet(l_tcp_packet_node_ptr);
+
+				if (!bstatus || (l_tcp_packet_node_ptr->getstate() == tcp_end))
+				{
+					http_map_session_ptr_.del(l_tcp_packet_node_ptr->get_tuple_hash());
+				}
+
+			} while (false);
 			return true;
 		}
 
@@ -765,12 +806,22 @@ namespace xzh
 		{
 			http_packet_data_hub_.del_handler(key_);
 		}
+
+		template <typename TFun>
+		bool add_http_filter_handler(string key_, TFun filterfun_)
+		{
+			http_packet_filter_hub_.add_handler(key_, filterfun_);
+		}
+
+		void del_http_filter_handler(string key_)
+		{
+			http_packet_data_hub_.del_handler(key_);
+		}
 	private:
 		http_map_session_ptr http_map_session_ptr_;
 		http_packet_data_hub http_packet_data_hub_;
+		http_packet_filter_hub http_packet_filter_hub_;
 	};
-
-
 };
 
 #include <boost/asio/unyield.hpp>

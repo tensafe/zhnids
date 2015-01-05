@@ -255,6 +255,11 @@ namespace xzh
 		{
 			bool bretvalue = false;
 
+			if (!tcp_packet_ptr_)
+			{
+				return false;
+			}
+
 			for (size_t index_ = 0; index_ < tcp_repacket_hub_.size(); index_ ++)
 			{
 				tcp_repacket_hub::return_type_ptr temp_ = tcp_repacket_hub_[index_];
