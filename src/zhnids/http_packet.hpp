@@ -602,7 +602,7 @@ namespace xzh
 	};
 
 	typedef pcap_hub_impl<string, bool (tcp_packet_node_ptr, http_packet_data_ptr)> http_packet_data_hub;
-	typedef pcap_hub_impl<string, bool (tcp_packet_node_ptr)> http_packet_filter_hub;
+	typedef pcap_hub_impl<string, bool (tcp_packet_node_ptr, bool &)> http_packet_filter_hub;
 
 	class http_session : public session,
 		public boost::asio::coroutine
@@ -736,11 +736,10 @@ namespace xzh
 					continue;
 				}
 
-				if((*temp_)(l_tcp_packet_node_ptr))
-				{
-					bretvalue = true;
-				}
-				else
+				bool bisfilter = true;
+				(*temp_)(l_tcp_packet_node_ptr, bisfilter);
+
+				if (!bisfilter)
 				{
 					bretvalue = false;
 					break;
@@ -810,7 +809,7 @@ namespace xzh
 		template <typename TFun>
 		bool add_http_filter_handler(string key_, TFun filterfun_)
 		{
-			http_packet_filter_hub_.add_handler(key_, filterfun_);
+			return http_packet_filter_hub_.add_handler(key_, filterfun_);
 		}
 
 		void del_http_filter_handler(string key_)
