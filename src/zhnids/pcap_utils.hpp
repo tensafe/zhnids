@@ -224,12 +224,12 @@ namespace xzh
 					if (l_pcap_t != NULL)
 					{
 						pcap_close(l_pcap_t);
-						boost::mutex::scoped_lock l_mutex(mutex_);
+						/*boost::mutex::scoped_lock l_mutex(mutex_);
 						device_pcap_list::iterator pos_find = std::find(device_pcap_list_.begin(), device_pcap_list_.end(), l_pcap_t);
 						if (pos_find != device_pcap_list_.end())
 						{
 							device_pcap_list_.erase(pos_find);
-						}
+						}*/
 					}
 				} while (false);
 
