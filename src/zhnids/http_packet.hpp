@@ -664,6 +664,10 @@ namespace xzh
 
 					if (!l_tcp_packet_node_ptr->isclient())
 					{
+						if (!http_packet_data_ptr_)
+						{
+							return false;
+						}
 						http_packet_data_ptr_->set_http_data_type() = http_packet_data::http_response_type;
 
 						while(true)
