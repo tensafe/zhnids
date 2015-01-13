@@ -610,32 +610,48 @@ namespace xzh
 	public:
 		explicit http_session(http_packet_data_hub & _http_packet_data_hub_, http_packet_filter_hub & _http_packet_filter_hub_)
 			:http_packet_data_hub_(_http_packet_data_hub_),
-			http_packet_filter_hub_(_http_packet_filter_hub_)
+			http_packet_filter_hub_(_http_packet_filter_hub_),
+			bisfilter(false)
 		{
 
 		}
 	public:
 		boost::tribool switch_packet(xzh::tcp_packet_node_ptr l_tcp_packet_node_ptr)
 		{
-			reenter(this)
+			if (l_tcp_packet_node_ptr->getstate() == tcp_connect)
 			{
-				if (l_tcp_packet_node_ptr->getstate() == tcp_connect)
+				return boost::indeterminate;
+			}
+
+			if ((l_tcp_packet_node_ptr->getstate() == tcp_end)
+				|| (l_tcp_packet_node_ptr->getstate() == tcp_ending))
+			{
+				return false;
+			}
+
+			if(l_tcp_packet_node_ptr->getstate() != tcp_data)
+			{
+				return false;
+			}
+
+			if(!bisfilter)
+			{
+				if(!filter_handler(l_tcp_packet_node_ptr))
 				{
-					yield return boost::indeterminate;
+					return true;
 				}
 
-				while(l_tcp_packet_node_ptr->getstate() == tcp_data)
+				bisfilter = true;
+			}
+
+			reenter(this)
+			{
+				while(true)
 				{
 					if (l_tcp_packet_node_ptr->isclient())
 					{
 						http_packet_data_ptr_ = http_packet_data_ptr(new http_packet_data());
 						http_packet_data_ptr_->set_http_data_type() = http_packet_data::http_request_type;
-
-						//增加一次数据开始传输时回调接口，允许过滤掉部分数据...
-						if(!filter_handler(l_tcp_packet_node_ptr))
-						{
-							return false;
-						}
 
 						while(true)
 						{
@@ -668,6 +684,7 @@ namespace xzh
 						{
 							return false;
 						}
+
 						http_packet_data_ptr_->set_http_data_type() = http_packet_data::http_response_type;
 
 						while(true)
@@ -694,12 +711,6 @@ namespace xzh
 					notify_handler(l_tcp_packet_node_ptr, http_packet_data_ptr_);
 
 					yield return true;
-				}
-
-				if ((l_tcp_packet_node_ptr->getstate() == tcp_end)
-					|| (l_tcp_packet_node_ptr->getstate() == tcp_ending))
-				{
-					yield return false;
 				}
 			}
 			return true;
@@ -760,6 +771,7 @@ namespace xzh
 		boost::tribool valid_request_;
 		http_packet_data_hub &http_packet_data_hub_;
 		http_packet_filter_hub &http_packet_filter_hub_;
+		bool bisfilter;
 	};
 
 	typedef map_ptr_manager<unsigned long, http_session> http_map_session_ptr;
