@@ -43,6 +43,8 @@ namespace xzh
 		std::string content;
 	};
 
+#define content_max_cache (1 * 1024 * 1024)
+
 	struct http_response
 	{
 		/// return status code
@@ -62,6 +64,21 @@ namespace xzh
 
 		/// The optional content sent with the request.
 		std::string content;
+
+		/// total length...
+		int total_length;
+		
+		/// recv length...
+		int recv_length;
+
+		boost::tribool repares_status;
+
+		http_response()
+		{
+			content.reserve(content_max_cache + 100);
+			total_length = -1;
+			recv_length = 0;
+		}
 	};
 
 	class http_packet_data
@@ -322,6 +339,7 @@ namespace xzh
 							try
 							{
 								content_length_ = boost::lexical_cast<std::size_t>(res.headers[i].value);
+								res.total_length = content_length_;
 							}
 							catch (boost::bad_lexical_cast&)
 							{
@@ -340,10 +358,11 @@ namespace xzh
 					// Content.
 					if (ishave_content_length)
 					{
-						while (res.content.size() < content_length_)
+						while (res.recv_length < content_length_)
 						{
 							yield return boost::indeterminate;
 							res.content.push_back(c);
+							res.recv_length ++;
 						}
 					}
 					else
@@ -375,7 +394,7 @@ namespace xzh
 								break;
 							}
 
-							content_length_ += res.content.size();
+							content_length_ += res.recv_length;
 
 
 							if (c != '\r') return false;
@@ -383,9 +402,10 @@ namespace xzh
 							if (c != '\n') return false;
 							yield return boost::indeterminate;
 
-							while (res.content.size() < content_length_)
+							while (res.recv_length < content_length_)
 							{
 								res.content.push_back(c);
+								res.recv_length ++;
 								yield return boost::indeterminate;
 							}
 
@@ -623,8 +643,7 @@ namespace xzh
 				return boost::indeterminate;
 			}
 
-			if ((l_tcp_packet_node_ptr->getstate() == tcp_end)
-				|| (l_tcp_packet_node_ptr->getstate() == tcp_ending))
+			if ((l_tcp_packet_node_ptr->getstate() == tcp_end))
 			{
 				return false;
 			}
@@ -691,6 +710,8 @@ namespace xzh
 						{
 							boost::tie(valid_request_, boost::tuples::ignore) = http_response_parse_.parse(http_packet_data_ptr_->set_http_response(), l_tcp_packet_node_ptr->get_tcp_packet_data().begin(), l_tcp_packet_node_ptr->get_tcp_packet_data().end());
 
+							http_packet_data_ptr_->set_http_response().repares_status = valid_request_;
+
 							if (!valid_request_)
 							{
 								return false;
@@ -698,6 +719,15 @@ namespace xzh
 
 							if (boost::indeterminate(valid_request_))
 							{
+								if (http_packet_data_ptr_->set_http_response().content.size() > content_max_cache)
+								{
+									notify_handler(l_tcp_packet_node_ptr, http_packet_data_ptr_);
+									http_packet_data_ptr_->set_http_response().content.clear();
+								}
+								else
+								{
+									int a = 0;
+								}
 								yield return valid_request_;
 							}
 
