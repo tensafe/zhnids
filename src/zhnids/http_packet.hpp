@@ -648,9 +648,9 @@ namespace xzh
 				return false;
 			}
 
-			if(l_tcp_packet_node_ptr->getstate() != tcp_data)
+			if ((l_tcp_packet_node_ptr->getstate() != tcp_data))
 			{
-				return false;
+				return true;
 			}
 
 			if(!bisfilter)
@@ -726,7 +726,6 @@ namespace xzh
 								}
 								else
 								{
-									int a = 0;
 								}
 								yield return valid_request_;
 							}

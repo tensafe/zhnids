@@ -303,12 +303,12 @@ namespace xzh
 			return !data_.empty();
 		}
 
-		const udp_packet_data &get_tcp_packet_data()
+		const udp_packet_data &get_udp_packet_data()
 		{
 			return udp_packet_data_;
 		}
 
-		udp_packet_data &set_tcp_packet_data()
+		udp_packet_data &set_udp_packet_data()
 		{
 			return udp_packet_data_;
 		}

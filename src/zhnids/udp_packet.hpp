@@ -80,7 +80,7 @@ namespace xzh
 				{
 
 				}
-				std::copy((unsigned char*)udphdr_ + sizeof(xzhnet_udp_hdr), (unsigned char*)udphdr_ + uudp_len, inserter(l_udp_packet_ptr_->set_tcp_packet_data(), l_udp_packet_ptr_->set_tcp_packet_data().end()));
+				std::copy((unsigned char*)udphdr_ + sizeof(xzhnet_udp_hdr), (unsigned char*)udphdr_ + uudp_len, inserter(l_udp_packet_ptr_->set_udp_packet_data(), l_udp_packet_ptr_->set_udp_packet_data().end()));
 
 				notify_udppacket(l_udp_packet_ptr_);
 
