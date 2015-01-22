@@ -380,6 +380,10 @@ namespace xzh
 							try
 							{
 								std::string strhex_value;
+								if (chunk_len.size() % 2 == 1)
+								{
+									chunk_len = "0" + chunk_len;
+								}
 								boost::algorithm::unhex(chunk_len.begin(), chunk_len.end(), inserter(strhex_value, strhex_value.end()));
 								content_length_ = 0;
 								memcpy(&content_length_, strhex_value.c_str(), min(strhex_value.size(), sizeof(int)));
@@ -719,14 +723,14 @@ namespace xzh
 
 							if (boost::indeterminate(valid_request_))
 							{
-								if (http_packet_data_ptr_->set_http_response().content.size() > content_max_cache)
+								/*if (http_packet_data_ptr_->set_http_response().content.size() > content_max_cache)
 								{
 									notify_handler(l_tcp_packet_node_ptr, http_packet_data_ptr_);
 									http_packet_data_ptr_->set_http_response().content.clear();
 								}
 								else
 								{
-								}
+								}*/
 								yield return valid_request_;
 							}
 
