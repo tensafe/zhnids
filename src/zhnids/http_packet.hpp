@@ -387,6 +387,11 @@ namespace xzh
 								boost::algorithm::unhex(chunk_len.begin(), chunk_len.end(), inserter(strhex_value, strhex_value.end()));
 								content_length_ = 0;
 								memcpy(&content_length_, strhex_value.c_str(), min(strhex_value.size(), sizeof(int)));
+
+								if (chunk_len.size() == 4)
+								{
+									content_length_ = ntohs(content_length_);
+								}
 							}
 							catch (...)
 							{
