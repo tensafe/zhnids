@@ -264,7 +264,7 @@ namespace xzh
 					if (c != ' ') return false;
 					yield return boost::indeterminate;
 
-					while (is_char(c) && !is_ctl(c) && !is_tspecial(c) && c != '\r')
+					while (is_char(c) && !is_ctl(c) && c != '\r')
 					{
 						res.status.push_back(c);
 						yield return boost::indeterminate;
@@ -728,14 +728,14 @@ namespace xzh
 
 							if (boost::indeterminate(valid_request_))
 							{
-								/*if (http_packet_data_ptr_->set_http_response().content.size() > content_max_cache)
+								if (http_packet_data_ptr_->set_http_response().content.size() > content_max_cache)
 								{
 									notify_handler(l_tcp_packet_node_ptr, http_packet_data_ptr_);
 									http_packet_data_ptr_->set_http_response().content.clear();
 								}
 								else
 								{
-								}*/
+								}
 								yield return valid_request_;
 							}
 
