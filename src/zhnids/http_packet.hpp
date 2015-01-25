@@ -43,7 +43,7 @@ namespace xzh
 		std::string content;
 	};
 
-#define content_max_cache (1 * 1024 * 1024)
+//#define content_max_cache (1 * 1024 * 1024)
 
 	struct http_response
 	{
@@ -75,7 +75,7 @@ namespace xzh
 
 		http_response()
 		{
-			content.reserve(content_max_cache + 100);
+			//content.reserve(content_max_cache + 100);
 			total_length = -1;
 			recv_length = 0;
 		}
@@ -728,14 +728,14 @@ namespace xzh
 
 							if (boost::indeterminate(valid_request_))
 							{
-								if (http_packet_data_ptr_->set_http_response().content.size() > content_max_cache)
+								/*if (http_packet_data_ptr_->set_http_response().content.size() > content_max_cache)
 								{
 									notify_handler(l_tcp_packet_node_ptr, http_packet_data_ptr_);
 									http_packet_data_ptr_->set_http_response().content.clear();
 								}
 								else
 								{
-								}
+								}*/
 								yield return valid_request_;
 							}
 
