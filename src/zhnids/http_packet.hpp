@@ -10,8 +10,9 @@
 #include <boost/lexical_cast.hpp>
 #include <zhnids/stage/map_ptr_manager.hpp>
 #include <zhnids/stage/pcap_hub.hpp>
-
+#include <WinSock.h>
 #include <boost/asio/yield.hpp>
+
 using namespace std;
 
 namespace xzh
