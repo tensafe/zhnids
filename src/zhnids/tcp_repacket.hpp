@@ -58,6 +58,7 @@ namespace xzh
 						{
 							if (ipacket_seq == seq_next_s)
 							{
+								seq_next_r = tcp_node_ptr->getackseq();
 								notify_tcppacket(tcp_node_ptr);
 
 								seq_next_s = ipacket_seq + tcp_node_ptr->getdatalen();
@@ -85,6 +86,7 @@ namespace xzh
 
 											seq_next_s = seq_next_s + l_tcp_node_ptr->getdatalen();
 
+											seq_next_r = tcp_node_ptr->getackseq();
 											notify_tcppacket(l_tcp_node_ptr);
 
 										} while (false);
@@ -99,6 +101,7 @@ namespace xzh
 										//回调数据,从map中移除
 										//todo:
 										//call back....
+										seq_next_r = tcp_node_ptr->getackseq();
 										notify_tcppacket(l_node_ptr);
 										map_tcp_queue_data_s.erase(pos ++);
 									}
@@ -129,6 +132,7 @@ namespace xzh
 									//seq_next_s = tcp_node_ptr->getseq() + tcp_node_ptr->getdatalen();
 									seq_next_s = seq_next_s + tcp_node_ptr->getdatalen();
 
+									seq_next_r = tcp_node_ptr->getackseq();
 									notify_tcppacket(tcp_node_ptr);
 
 								} while (false);
@@ -152,6 +156,7 @@ namespace xzh
 							{
 								seq_next_r = ipacket_seq + tcp_node_ptr->getdatalen();
 
+								seq_next_s = tcp_node_ptr->getackseq();
 								notify_tcppacket(tcp_node_ptr);
 
 								boost::mutex::scoped_lock lock(map_tcp_queue_data_r_mutex);
@@ -177,6 +182,7 @@ namespace xzh
 
 											seq_next_r = l_tcp_node_ptr->getseq() + l_tcp_node_ptr->getdatalen();
 
+											seq_next_s = tcp_node_ptr->getackseq();
 											notify_tcppacket(l_tcp_node_ptr);
 
 										} while (false);
@@ -190,6 +196,7 @@ namespace xzh
 										seq_next_r = seq_next_r + l_node_ptr->getdatalen();
 										//回调数据,从map中移除
 										//call next data...
+										seq_next_s = tcp_node_ptr->getackseq();
 										notify_tcppacket(l_node_ptr);
 										map_tcp_queue_data_r.erase(pos ++);
 									}
@@ -219,6 +226,7 @@ namespace xzh
 
 									seq_next_r = tcp_node_ptr->getseq() + tcp_node_ptr->getdatalen();
 
+									seq_next_s = tcp_node_ptr->getackseq();
 									notify_tcppacket(tcp_node_ptr);
 									
 								} while (false);
@@ -318,7 +326,6 @@ namespace xzh
 				{
 					break;
 				}
-
 
 				if ((tcp_queue_node_->getstate() == tcp_end))
 				{
