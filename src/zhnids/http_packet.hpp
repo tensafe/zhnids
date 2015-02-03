@@ -303,7 +303,10 @@ namespace xzh
 							}
 
 							// Colon and space separates the header name from the header value.
-							if (c != ':') return false;
+							if (c != ':')
+							{
+								return false;
+							}
 							yield return boost::indeterminate;
 							if (c != ' ')
 							{
@@ -313,16 +316,22 @@ namespace xzh
 						}
 
 						// Header value.
-						while (is_char(c) && !is_ctl(c) && c != '\r')
+						while (/*is_char(c) && !is_ctl(c) && */c != '\r')
 						{
 							res.headers.back().value.push_back(c);
 							yield return boost::indeterminate;
 						}
 
 						// CRLF.
-						if (c != '\r') return false;
+						if (c != '\r') 
+						{
+							return false;
+						}
 						yield return boost::indeterminate;
-						if (c != '\n') return false;
+						if (c != '\n')
+						{
+							return false;
+						}
 						yield return boost::indeterminate;
 					}
 
