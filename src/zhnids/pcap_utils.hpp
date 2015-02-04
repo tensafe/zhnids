@@ -9,6 +9,8 @@
 #include <zhnids/packet_header.hpp>
 #include <zhnids/stage/pcap_hub.hpp>
 #include <zhnids/stage/outdebug.hpp>
+#include <boost/thread/detail/thread.hpp>
+#include <boost/interprocess/sync/named_mutex.hpp>
 
 using namespace std;
 
@@ -29,52 +31,67 @@ namespace xzh
 	public:
 		bool start(const string strfilter, int buffer_size = 10, int time_out = 0)
 		{
-			pcap_if_t *all_devs = NULL;
-			do 
+			boost::interprocess::named_mutex mutex(boost::interprocess::open_or_create, "zhnids_named_mutex");
+			boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(mutex);
+
+			try
 			{
-				string strerror;
-				strerror.resize(PCAP_ERRBUF_SIZE);
-				int iret = pcap_findalldevs(&all_devs,
-					(char*)strerror.c_str());
-
-				if (iret != 0)
+				pcap_if_t *all_devs = NULL;
+				do 
 				{
-					debughelp::safe_debugstr(200 + PCAP_ERRBUF_SIZE, "pcap find all devs error[%d],errormsg:", iret, strerror.c_str());
-					break;
-				}
+					string strerror;
+					strerror.resize(PCAP_ERRBUF_SIZE);
+					int iret = pcap_findalldevs(&all_devs,
+						(char*)strerror.c_str());
 
-				device_list device_list_;
-				for (pcap_if_t * index_ = all_devs; index_ != NULL; index_ = index_->next)
-				{
-					netdevice_ptr l_netdevice_ptr = netdevice_ptr(new netdevice());
-					if (l_netdevice_ptr)
+					if (iret != 0)
 					{
-						getnetdevice_info(index_, l_netdevice_ptr);
-
-						device_list_.push_back(make_pair(string(index_->name), l_netdevice_ptr));
-						debughelp::safe_debugstr(1024, "name:%s,des:%s", index_->name, index_->description);
+						debughelp::safe_debugstr(200 + PCAP_ERRBUF_SIZE, "pcap find all devs error[%d],errormsg:", iret, strerror.c_str());
+						break;
 					}
-				}
 
-				if (device_list_.empty())
+					device_list device_list_;
+					for (pcap_if_t * index_ = all_devs; index_ != NULL; index_ = index_->next)
+					{
+						debughelp::safe_debugstr(1024, "name:%s,des:%s", index_->name, index_->description);
+						netdevice_ptr l_netdevice_ptr = netdevice_ptr(new netdevice());
+						if (l_netdevice_ptr)
+						{
+							getnetdevice_info(index_, l_netdevice_ptr);
+							device_list_.push_back(make_pair(string(index_->name), l_netdevice_ptr));
+						}
+						else
+						{
+							debughelp::safe_debugstr(200, "new netdevice error!");
+						}
+					}
+
+					if (device_list_.empty())
+					{
+						debughelp::safe_debugstr(200, "device list empty");
+						break;
+					}
+
+					strerror.resize(PCAP_ERRBUF_SIZE);
+					for (device_list::iterator pos = device_list_.begin(); pos != device_list_.end(); pos ++)
+					{
+						string strdevname(pos->first);
+						boost::thread *l_start_thread = thread_group_.create_thread(boost::bind(&xzhnids::pcapt_thread, this, strdevname, strfilter, pos->second, buffer_size, time_out));
+					}
+
+				} while (false);
+
+				if (all_devs != NULL)
 				{
-					debughelp::safe_debugstr(200, "device list empty");
-					break;
+					pcap_freealldevs(all_devs);
 				}
 
-				strerror.resize(PCAP_ERRBUF_SIZE);
-				for (device_list::iterator pos = device_list_.begin(); pos != device_list_.end(); pos ++)
-				{
-					string strdevname(pos->first);
-					thread_group_.create_thread(boost::bind(&xzhnids::pcapt_thread, this, strdevname, strfilter, pos->second, buffer_size, time_out));
-				}
-
-			} while (false);
-
-			if (all_devs != NULL)
-			{
-				pcap_freealldevs(all_devs);
 			}
+			catch(...)
+			{
+			}
+
+			boost::interprocess::named_mutex::remove("zhnids_named_mutex");
 
 			return true;
 		}
@@ -246,7 +263,7 @@ namespace xzh
 		}
 		void inner_handler_(const struct pcap_pkthdr *pkt_header, const u_char *pkt_data, netdevice_ptr l_netdevice_ptr)
 		{
-			try
+			//try
 			{
 				do 
 				{
@@ -292,24 +309,31 @@ namespace xzh
 							continue;
 						}
 
-						if((*temp_)(data_vector, idatalen, l_netdevice_ptr))
+						//try
 						{
+							if((*temp_)(data_vector, idatalen, l_netdevice_ptr))
+							{
+							}
+							else
+							{
+							}
 						}
-						else
+						/*catch(...)
 						{
-						}
+						int i = 0;
+						}*/
 					}
 
 				} while (false);
 			}
-			catch(...)
+			/*catch(...)
 			{
-
-			}
+				debughelp::safe_debugstr(200, "afasff");
+			}*/
 		}
 		static void pcap_handler (u_char *user, const struct pcap_pkthdr *pkt_header, const u_char *pkt_data)
 		{
-			try
+			//try
 			{
 				do 
 				{
@@ -326,10 +350,10 @@ namespace xzh
 					xzhnids_->inner_handler_( pkt_header, pkt_data, l_user_data->net_device_ptr);
 				} while (false);
 			}
-			catch(...)
+		/*	catch(...)
 			{
 
-			}
+			}*/
 		}
 	private:
 		bool getnetdevice_info(pcap_if_t *device, netdevice_ptr l_netdevice_ptr)

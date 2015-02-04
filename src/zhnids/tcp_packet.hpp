@@ -427,6 +427,25 @@ namespace xzh
 
 					notify_handler(l_tcp_queue_node_ptr);
 				}
+				else
+				{
+					tcp_packet_node_ptr l_tcp_queue_node_ptr = tcp_packet_node_ptr(new tcp_packet_node(tcp_stream_find_->tcp_key_.src_ip,
+						tcp_stream_find_->tcp_key_.dst_ip,
+						tcp_stream_find_->tcp_key_.src_port,
+						tcp_stream_find_->tcp_key_.dst_port,
+						bfromclient,
+						snd->seq,
+						snd->ack_seq,
+						tcp_data,
+						datalen));
+
+					if(l_tcp_queue_node_ptr->set_netdevice_ptr(l_netdevice_ptr))
+					{
+
+					}
+
+					notify_handler(l_tcp_queue_node_ptr);
+				}
 
 				bretvalue = true;
 

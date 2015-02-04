@@ -59,7 +59,11 @@ namespace xzh
 							if (ipacket_seq == seq_next_s)
 							{
 								seq_next_r = tcp_node_ptr->getackseq();
-								notify_tcppacket(tcp_node_ptr);
+
+								if (tcp_node_ptr->getdatalen() > 0)
+								{
+									notify_tcppacket(tcp_node_ptr);
+								}
 
 								seq_next_s = ipacket_seq + tcp_node_ptr->getdatalen();
 
@@ -86,8 +90,11 @@ namespace xzh
 
 											seq_next_s = seq_next_s + l_tcp_node_ptr->getdatalen();
 
-											seq_next_r = tcp_node_ptr->getackseq();
-											notify_tcppacket(l_tcp_node_ptr);
+											seq_next_r = l_tcp_node_ptr->getackseq();
+											if (l_tcp_node_ptr->getdatalen() > 0)
+											{
+												notify_tcppacket(l_tcp_node_ptr);
+											}
 
 										} while (false);
 
@@ -101,8 +108,12 @@ namespace xzh
 										//回调数据,从map中移除
 										//todo:
 										//call back....
-										seq_next_r = tcp_node_ptr->getackseq();
-										notify_tcppacket(l_node_ptr);
+										seq_next_r = l_node_ptr->getackseq();
+
+										if (l_node_ptr->getdatalen() > 0)
+										{
+											notify_tcppacket(l_node_ptr);
+										}
 										map_tcp_queue_data_s.erase(pos ++);
 									}
 									else if (pos->first > seq_next_s)
@@ -133,7 +144,12 @@ namespace xzh
 									seq_next_s = seq_next_s + tcp_node_ptr->getdatalen();
 
 									seq_next_r = tcp_node_ptr->getackseq();
-									notify_tcppacket(tcp_node_ptr);
+
+
+									if (tcp_node_ptr->getdatalen() > 0)
+									{
+										notify_tcppacket(tcp_node_ptr);
+									}
 
 								} while (false);
 
@@ -145,6 +161,9 @@ namespace xzh
 							{
 								boost::mutex::scoped_lock lock(map_tcp_queue_data_s_mutex);
 								map_tcp_queue_data_s[ipacket_seq] = tcp_node_ptr;
+								seq_next_s = tcp_node_ptr->getackseq();
+								map_tcp_queue_data::iterator pos_first = map_tcp_queue_data_s.begin();
+								//xzh::debughelp::safe_debugstr(200, "now seq:%08x,next_s:%08x, map_tcp_queue_first:%08x", ipacket_seq, seq_next_s, pos_first->first);
 							}
 						} while (false);
 					}
@@ -157,7 +176,10 @@ namespace xzh
 								seq_next_r = ipacket_seq + tcp_node_ptr->getdatalen();
 
 								seq_next_s = tcp_node_ptr->getackseq();
-								notify_tcppacket(tcp_node_ptr);
+								if (tcp_node_ptr->getdatalen() > 0)
+								{
+									notify_tcppacket(tcp_node_ptr);
+								}
 
 								boost::mutex::scoped_lock lock(map_tcp_queue_data_r_mutex);
 
@@ -182,8 +204,13 @@ namespace xzh
 
 											seq_next_r = l_tcp_node_ptr->getseq() + l_tcp_node_ptr->getdatalen();
 
-											seq_next_s = tcp_node_ptr->getackseq();
-											notify_tcppacket(l_tcp_node_ptr);
+											seq_next_s = l_tcp_node_ptr->getackseq();
+
+
+											if (l_tcp_node_ptr->getdatalen() > 0)
+											{
+												notify_tcppacket(l_tcp_node_ptr);
+											}
 
 										} while (false);
 
@@ -197,7 +224,13 @@ namespace xzh
 										//回调数据,从map中移除
 										//call next data...
 										seq_next_s = tcp_node_ptr->getackseq();
-										notify_tcppacket(l_node_ptr);
+
+
+										if (tcp_node_ptr->getdatalen() > 0)
+										{
+											notify_tcppacket(tcp_node_ptr);
+										}
+
 										map_tcp_queue_data_r.erase(pos ++);
 									}
 									else if (pos->first > seq_next_r)
@@ -227,7 +260,12 @@ namespace xzh
 									seq_next_r = tcp_node_ptr->getseq() + tcp_node_ptr->getdatalen();
 
 									seq_next_s = tcp_node_ptr->getackseq();
-									notify_tcppacket(tcp_node_ptr);
+
+
+									if (tcp_node_ptr->getdatalen() > 0)
+									{
+										notify_tcppacket(tcp_node_ptr);
+									}
 									
 								} while (false);
 
@@ -237,7 +275,11 @@ namespace xzh
 							if (ipacket_seq > seq_next_r)
 							{
 								boost::mutex::scoped_lock lock(map_tcp_queue_data_r_mutex);
+								seq_next_s = tcp_node_ptr->getackseq();
 								map_tcp_queue_data_r[ipacket_seq] = tcp_node_ptr;
+								map_tcp_queue_data::iterator pos_first = map_tcp_queue_data_r.begin();
+								//xzh::debughelp::safe_debugstr(200, "now seq:%08x,next_r:%08x, map_tcp_queue_first:%08x", ipacket_seq, seq_next_r, pos_first->first);
+
 							}
 						} while (false);
 					}
