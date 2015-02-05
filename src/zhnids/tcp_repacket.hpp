@@ -91,7 +91,7 @@ namespace xzh
 
 											seq_next_s = seq_next_s + l_tcp_node_ptr->getdatalen();
 
-											seq_next_r = max(tcp_node_ptr->getackseq(),seq_next_r);
+											seq_next_r = max(l_tcp_node_ptr->getackseq(),seq_next_r);
 											if (l_tcp_node_ptr->getdatalen() > 0)
 											{
 												notify_tcppacket(l_tcp_node_ptr);
@@ -109,7 +109,7 @@ namespace xzh
 										//回调数据,从map中移除
 										//todo:
 										//call back....
-										seq_next_r = max(tcp_node_ptr->getackseq(),seq_next_r);
+										seq_next_r = max(l_node_ptr->getackseq(),seq_next_r);
 
 										if (l_node_ptr->getdatalen() > 0)
 										{
@@ -206,7 +206,7 @@ namespace xzh
 
 											seq_next_r = l_tcp_node_ptr->getseq() + l_tcp_node_ptr->getdatalen();
 
-											seq_next_s = max(tcp_node_ptr->getackseq(),seq_next_s);
+											seq_next_s = max(l_tcp_node_ptr->getackseq(),seq_next_s);
 
 
 											if (l_tcp_node_ptr->getdatalen() > 0)
@@ -225,12 +225,12 @@ namespace xzh
 										seq_next_r = seq_next_r + l_node_ptr->getdatalen();
 										//回调数据,从map中移除
 										//call next data...
-										seq_next_s = max(tcp_node_ptr->getackseq(),seq_next_s);
+										seq_next_s = max(l_node_ptr->getackseq(),seq_next_s);
 
 
-										if (tcp_node_ptr->getdatalen() > 0)
+										if (l_node_ptr->getdatalen() > 0)
 										{
-											notify_tcppacket(tcp_node_ptr);
+											notify_tcppacket(l_node_ptr);
 										}
 
 										map_tcp_queue_data_r.erase(pos ++);

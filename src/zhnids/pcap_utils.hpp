@@ -10,7 +10,6 @@
 #include <zhnids/stage/pcap_hub.hpp>
 #include <zhnids/stage/outdebug.hpp>
 #include <boost/thread/detail/thread.hpp>
-#include <boost/interprocess/sync/named_mutex.hpp>
 
 using namespace std;
 
@@ -31,9 +30,6 @@ namespace xzh
 	public:
 		bool start(const string strfilter, int buffer_size = 10, int time_out = 0)
 		{
-			boost::interprocess::named_mutex mutex(boost::interprocess::open_or_create, "zhnids_named_mutex");
-			boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(mutex);
-
 			try
 			{
 				pcap_if_t *all_devs = NULL;
@@ -90,8 +86,6 @@ namespace xzh
 			catch(...)
 			{
 			}
-
-			boost::interprocess::named_mutex::remove("zhnids_named_mutex");
 
 			return true;
 		}
