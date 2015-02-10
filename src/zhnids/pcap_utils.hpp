@@ -172,11 +172,10 @@ namespace xzh
 				{
 					string strerror;
 					strerror.resize(PCAP_ERRBUF_SIZE);
-					pcap_t* l_pcap_t = pcap_open(strpcap_name.c_str(),
+					pcap_t* l_pcap_t = pcap_open_live(strpcap_name.c_str(),
 						65536,
 						PCAP_OPENFLAG_PROMISCUOUS,
 						time_out,
-						NULL,
 						(char*)strerror.c_str());
 
 					if (l_pcap_t == NULL)
@@ -229,7 +228,7 @@ namespace xzh
 
 					l_user_data->net_device_ptr = l_net_device_ptr;
 					l_user_data->innser_ptr = (unsigned long)this;
-					iret = pcap_loop(l_pcap_t, 0, xzhnids::pcap_handler, (u_char*)l_user_data);
+					iret = pcap_loop(l_pcap_t, -1, xzhnids::pcap_handler, (u_char*)l_user_data);
 
 					delete l_user_data;
 					if (l_pcap_t != NULL)
@@ -257,7 +256,7 @@ namespace xzh
 		}
 		void inner_handler_(const struct pcap_pkthdr *pkt_header, const u_char *pkt_data, netdevice_ptr l_netdevice_ptr)
 		{
-			//try
+			try
 			{
 				do 
 				{
@@ -303,7 +302,7 @@ namespace xzh
 							continue;
 						}
 
-						//try
+						try
 						{
 							if((*temp_)(data_vector, idatalen, l_netdevice_ptr))
 							{
@@ -312,22 +311,21 @@ namespace xzh
 							{
 							}
 						}
-						/*catch(...)
+						catch(...)
 						{
-						int i = 0;
-						}*/
+						}
 					}
 
 				} while (false);
 			}
-			/*catch(...)
+			catch(...)
 			{
 				debughelp::safe_debugstr(200, "afasff");
-			}*/
+			}
 		}
 		static void pcap_handler (u_char *user, const struct pcap_pkthdr *pkt_header, const u_char *pkt_data)
 		{
-			//try
+			try
 			{
 				do 
 				{
@@ -336,18 +334,15 @@ namespace xzh
 						debughelp::safe_debugstr(200, "user nil");
 						break;
 					}
-
 					puser_data l_user_data = (puser_data)user;
-
 					xzhnids* xzhnids_ = (xzhnids*)l_user_data->innser_ptr;
-					//string strdevname(l_user_data->devname);
 					xzhnids_->inner_handler_( pkt_header, pkt_data, l_user_data->net_device_ptr);
 				} while (false);
 			}
-		/*	catch(...)
+			catch(...)
 			{
 
-			}*/
+			}
 		}
 	private:
 		bool getnetdevice_info(pcap_if_t *device, netdevice_ptr l_netdevice_ptr)

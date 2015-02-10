@@ -4,6 +4,9 @@
 #include <vector>
 #include <string>
 #include <map>
+#ifdef USE_THREAD_POOL
+#include <boost/threadpool.hpp>
+#endif
 
 #include <zhnids/net_header.hpp>
 #include <zhnids/stage/pcap_hub.hpp>
@@ -216,6 +219,13 @@ namespace xzh
 	{
 		typedef pcap_hub_impl<string, bool (vector<unsigned char>&, int, netdevice_ptr) > ippacket_hub;
 	public:
+#ifdef USE_THREAD_POOL
+		ipfragment()
+			:ip_fragment_fifo_pool_(1)
+		{
+		}
+#endif
+	public:
 		template <typename TFun>
 		bool add_ippacket_handler(string strkey, TFun callfun_)
 		{
@@ -224,12 +234,22 @@ namespace xzh
 
 		bool ipfrag_handler(std::vector<unsigned char> &data_, int len, netdevice_ptr netdevice_info_)
 		{
+#ifdef USE_THREAD_POOL
+			return ip_fragment_fifo_pool_.schedule(boost::bind(&ipfragment::inner_ipfrag_handler, this, data_, len, netdevice_info_));
+#else
+			return inner_ipfrag_handler(data_, len, netdevice_info_);
+#endif
+		}
+
+		bool inner_ipfrag_handler(std::vector<unsigned char> &data_, int len, netdevice_ptr netdevice_info_)
+		{
 			do 
 			{
 				if (len < sizeof(xzhnet_ipv4_hdr))
 				{
 					break;
 				}
+
 				xzhnet_ipv4_hdr* iphdr_ = (xzhnet_ipv4_hdr*)&data_[0];
 
 				if (iphdr_->ip_hl < 5)
@@ -466,6 +486,7 @@ namespace xzh
 	private:
 		process_ipfragment process_ipfragment_;
 		ippacket_hub	   ippacket_hub_;
+		boost::threadpool::fifo_pool ip_fragment_fifo_pool_;
 	};
 
 
@@ -539,7 +560,6 @@ namespace xzh
 					}
 					break;
 				}
-
 
 				if (iphdr_->ip_p == IPPROTO_UDP)
 				{

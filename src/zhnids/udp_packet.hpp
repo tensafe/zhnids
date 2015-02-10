@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 
+#include <boost/threadpool.hpp>
 #include <zhnids/packet_header.hpp> 
 #include <zhnids/stage/outdebug.hpp> 
 #include <zhnids/stage/pcap_hub.hpp>
@@ -33,7 +34,18 @@ namespace xzh
 		}
 
 	public:
+		udppacket()
+			:udp_repacket_thread_pool_(1)
+		{
+
+		}
+	public:
 		bool udp_handler(vector<unsigned char> &data_, int len, netdevice_ptr l_netdevice_ptr)
+		{
+			return udp_repacket_thread_pool_.schedule(boost::bind(&udppacket::inner_udp_handler, this, data_, len, l_netdevice_ptr));
+		}
+
+		bool inner_udp_handler(vector<unsigned char> &data_, int len, netdevice_ptr l_netdevice_ptr)
 		{
 			bool bretvalue = false;
 
@@ -164,6 +176,7 @@ namespace xzh
 		}
 		private:
 			udp_repacket_hub udp_repacket_hub_;
+			boost::threadpool::fifo_pool udp_repacket_thread_pool_;
 	};
 };
 

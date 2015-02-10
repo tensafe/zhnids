@@ -26,7 +26,7 @@ namespace xzh
 			u_short len;        
 		};
 
-#define tcp_max_time_out 10
+#define tcp_max_time_out 60
 
 		enum tcp_state
 		{
