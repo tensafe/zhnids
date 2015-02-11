@@ -264,7 +264,7 @@ namespace xzh
 						&& tcp_stream_find_->server_.tcp_state_ == TCP_SYN_RECV
 						)
 					{
-						if(tcp_stream_find_->server_.seq == ntohl(tcphdr_->th_ack))
+						//if(tcp_stream_find_->server_.seq == ntohl(tcphdr_->th_ack))
 						{
 							//debughelp::safe_debugstr(200, "3s ack ok...");
 
@@ -291,10 +291,10 @@ namespace xzh
 
 							notify_handler(l_tcp_queue_node_ptr);
 						}
-						else
+						/*else
 						{
 							debughelp::safe_debugstr(200, "3s ack error...");
-						}
+						}*/
 
 						break;
 					}
@@ -423,7 +423,9 @@ namespace xzh
 
 					}
 
-					std::copy((unsigned char*)tcphdr_ + (tcphdr_->th_off << 2), (unsigned char*)tcphdr_ +  datalen + (tcphdr_->th_off << 2), inserter(l_tcp_queue_node_ptr->set_tcp_packet_data(), l_tcp_queue_node_ptr->set_tcp_packet_data().end()));
+					l_tcp_queue_node_ptr->set_tcp_packet_data().resize(datalen);
+					std::copy((unsigned char*)tcphdr_ + (tcphdr_->th_off << 2), (unsigned char*)tcphdr_ +  datalen + (tcphdr_->th_off << 2), l_tcp_queue_node_ptr->set_tcp_packet_data().begin());
+					//std::copy((unsigned char*)tcphdr_ + (tcphdr_->th_off << 2), (unsigned char*)tcphdr_ +  datalen + (tcphdr_->th_off << 2), inserter(l_tcp_queue_node_ptr->set_tcp_packet_data(), l_tcp_queue_node_ptr->set_tcp_packet_data().end()));
 
 					notify_handler(l_tcp_queue_node_ptr);
 				}

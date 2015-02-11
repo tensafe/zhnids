@@ -127,7 +127,10 @@ namespace xzh
 		template <typename data>
 		bool add_data(data &data_)
 		{
-			copy(data_.begin(), data_.end(), inserter(tcp_pakcet_data_, tcp_pakcet_data_.end()));
+			int ioffset = tcp_pakcet_data_.size();
+			tcp_pakcet_data_.resize(ioffset + data_.size());
+			copy(data_.begin(), data_.end(), tcp_pakcet_data_.begin() + ioffset);
+
 			return !tcp_pakcet_data_.empty();
 		}
 

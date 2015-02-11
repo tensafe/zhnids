@@ -2,9 +2,11 @@
 #define PCAP_UTILS_HPP
 #include <string>
 #include <vector>
+#include <list>
 #define HAVE_REMOTE
 #include <pcap.h>
 
+#include <boost/timer.hpp>
 #include <boost/thread.hpp>
 #include <zhnids/packet_header.hpp>
 #include <zhnids/stage/pcap_hub.hpp>
@@ -286,7 +288,10 @@ namespace xzh
 
 					int idatalen = pkt_header->caplen - 14;
 					vector<unsigned char> data_vector;
-					copy(pkt_data + 14, pkt_data + pkt_header->caplen, inserter(data_vector, data_vector.end()));
+					data_vector.resize(idatalen);
+				
+					//memcpy(&data_vector[0], (char*)(pkt_data + 14), idatalen);
+					copy(pkt_data + 14, pkt_data + pkt_header->caplen, data_vector.begin());
 
 					if (data_vector.empty())
 					{
@@ -334,8 +339,15 @@ namespace xzh
 						debughelp::safe_debugstr(200, "user nil");
 						break;
 					}
+
 					puser_data l_user_data = (puser_data)user;
+
 					xzhnids* xzhnids_ = (xzhnids*)l_user_data->innser_ptr;
+
+					if (xzhnids_ == NULL)
+					{
+						break;
+					}
 					xzhnids_->inner_handler_( pkt_header, pkt_data, l_user_data->net_device_ptr);
 				} while (false);
 			}

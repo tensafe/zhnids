@@ -92,7 +92,9 @@ namespace xzh
 				{
 
 				}
-				std::copy((unsigned char*)udphdr_ + sizeof(xzhnet_udp_hdr), (unsigned char*)udphdr_ + uudp_len, inserter(l_udp_packet_ptr_->set_udp_packet_data(), l_udp_packet_ptr_->set_udp_packet_data().end()));
+
+				l_udp_packet_ptr_->set_udp_packet_data().resize(uudp_len - sizeof(xzhnet_udp_hdr));
+				std::copy((unsigned char*)udphdr_ + sizeof(xzhnet_udp_hdr), (unsigned char*)udphdr_ + uudp_len, l_udp_packet_ptr_->set_udp_packet_data().begin());
 
 				notify_udppacket(l_udp_packet_ptr_);
 

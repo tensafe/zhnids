@@ -128,7 +128,9 @@ namespace xzh
 
 				for(ip_fragment_group_data::iterator pos_ = pos->second.ip_fragment_group_data_.begin(); pos_ != pos->second.ip_fragment_group_data_.end(); pos_ ++)
 				{
-					copy(pos_->second.begin(), pos_->second.end(), inserter(data_, data_.end()));
+					int ioffset = data_.size();
+					data_.resize(ioffset + pos_->second.size());
+					copy(pos_->second.begin(), pos_->second.end(), data_.begin() + ioffset);
 				}
 
 			} while (false);
@@ -335,7 +337,8 @@ namespace xzh
 					ip_key_.ip_src = (iphdr_->ip_src.S_un.S_addr);
 
 					process_ipfragment::ip_fragment_data ip_frag_data_;
-					copy(data_.begin() + iphdr_->ip_hl * 4, data_.end(), inserter(ip_frag_data_, ip_frag_data_.end()));
+					ip_frag_data_.resize(data_.end() - data_.begin() - iphdr_->ip_hl * 4);
+					copy(data_.begin() + iphdr_->ip_hl * 4, data_.end(), ip_frag_data_.begin());
 
 					bool isdone = false;
 					process_ipfragment_.insert(ip_key_, ((uoffset << 3)), process_ipfragment::e_frag, ip_frag_data_, isdone);
@@ -416,8 +419,10 @@ namespace xzh
 					ip_key_.ip_dst = (iphdr_->ip_dst.S_un.S_addr);
 					ip_key_.ip_src = (iphdr_->ip_src.S_un.S_addr);
 
+
 					process_ipfragment::ip_fragment_data ip_frag_data_;
-					copy(data_.begin() + iphdr_->ip_hl * 4, data_.end(), inserter(ip_frag_data_, ip_frag_data_.end()));
+					ip_frag_data_.resize(data_.end() - data_.begin() - iphdr_->ip_hl * 4);
+					copy(data_.begin() + iphdr_->ip_hl * 4, data_.end(), ip_frag_data_.begin());
 
 					bool isdone = false;
 					process_ipfragment_.insert(ip_key_, ((uoffset << 3)), process_ipfragment::s_frag, ip_frag_data_, isdone);
