@@ -54,8 +54,7 @@ namespace xzh
 
 		};
 
-		//typedef vector<unsigned char> ip_fragment_data;
-		typedef boost::iterator_range<ip_packet_data::iterator> ip_fragment_data;
+		typedef vector<unsigned char> ip_fragment_data;
 		typedef map<u_short, ip_fragment_data> ip_fragment_group_data;
 		struct ip_fragment_s
 		{
@@ -339,18 +338,18 @@ namespace xzh
 					ip_key_.ip_src = (iphdr_->ip_src.S_un.S_addr);
 
 					process_ipfragment::ip_fragment_data ip_frag_data_;
-					ip_frag_data_.resize(data_.end() - data_.begin() - iphdr_->ip_hl * 4);
-					copy(data_.begin() + iphdr_->ip_hl * 4, data_.end(), ip_frag_data_.begin());
+					ip_frag_data_.resize(ip_packet_node_->get_packet_data().end() - ip_packet_node_->get_packet_data().begin() - iphdr_->ip_hl * 4);
+					copy(ip_packet_node_->get_packet_data().begin() + iphdr_->ip_hl * 4, ip_packet_node_->get_packet_data().end(), ip_frag_data_.begin());
 
 					bool isdone = false;
 					process_ipfragment_.insert(ip_key_, ((uoffset << 3)), process_ipfragment::e_frag, ip_frag_data_, isdone);
 
 					if (isdone)
 					{
-						process_ipfragment::ip_fragment_data l_ippacket_data;
-						process_ipfragment_.get(ip_key_, l_ippacket_data);
+						ip_packet_node_ptr ip_packet_node_ = ip_packet_node_ptr(new ip_packet_node());
+						process_ipfragment_.get(ip_key_, ip_packet_node_->set_packet_data());
 
-						if (l_ippacket_data.size())
+						if (ip_packet_node_->get_packet_data().size())
 						{
 							for (size_t index_ = 0; index_ < ippacket_hub_.size(); index_ ++)
 							{
@@ -360,7 +359,7 @@ namespace xzh
 									continue;
 								}
 
-								if((*temp_)(l_ippacket_data, l_ippacket_data.size(), netdevice_info_))
+								if((*temp_)(ip_packet_node_, ip_packet_node_->get_packet_data().size(), netdevice_info_))
 								{
 								}
 								else
@@ -383,14 +382,14 @@ namespace xzh
 					ip_key_.ip_len = iphdr_->ip_hl * 4;
 
 					bool isdone = false;
-					process_ipfragment_.insert(ip_key_, 0, process_ipfragment::s_frag, data_, isdone);
+					process_ipfragment_.insert(ip_key_, 0, process_ipfragment::s_frag, ip_packet_node_->set_packet_data(), isdone);
 
 					if (isdone)
 					{
-						process_ipfragment::ip_fragment_data l_ippacket_data;
-						process_ipfragment_.get(ip_key_, l_ippacket_data);
+						ip_packet_node_ptr ip_packet_node_ = ip_packet_node_ptr(new ip_packet_node());
+						process_ipfragment_.get(ip_key_, ip_packet_node_->set_packet_data());
 
-						if (l_ippacket_data.size())
+						if (ip_packet_node_->get_packet_data().size())
 						{
 							for (size_t index_ = 0; index_ < ippacket_hub_.size(); index_ ++)
 							{
@@ -400,7 +399,7 @@ namespace xzh
 									continue;
 								}
 
-								if((*temp_)(l_ippacket_data, l_ippacket_data.size(), netdevice_info_))
+								if((*temp_)(ip_packet_node_, ip_packet_node_->get_packet_data().size(), netdevice_info_))
 								{
 								}
 								else
@@ -423,18 +422,18 @@ namespace xzh
 
 
 					process_ipfragment::ip_fragment_data ip_frag_data_;
-					ip_frag_data_.resize(data_.end() - data_.begin() - iphdr_->ip_hl * 4);
-					copy(data_.begin() + iphdr_->ip_hl * 4, data_.end(), ip_frag_data_.begin());
+					ip_frag_data_.resize(ip_packet_node_->get_packet_data().end() - ip_packet_node_->get_packet_data().begin() - iphdr_->ip_hl * 4);
+					copy(ip_packet_node_->get_packet_data().begin() + iphdr_->ip_hl * 4, ip_packet_node_->get_packet_data().end(), ip_frag_data_.begin());
 
 					bool isdone = false;
 					process_ipfragment_.insert(ip_key_, ((uoffset << 3)), process_ipfragment::s_frag, ip_frag_data_, isdone);
 
 					if (isdone)
 					{
-						process_ipfragment::ip_fragment_data l_ippacket_data;
-						process_ipfragment_.get(ip_key_, l_ippacket_data);
+						ip_packet_node_ptr ip_packet_node_ = ip_packet_node_ptr(new ip_packet_node());
+						process_ipfragment_.get(ip_key_, ip_packet_node_->set_packet_data());
 
-						if (l_ippacket_data.size())
+						if (ip_packet_node_->get_packet_data().size())
 						{
 							for (size_t index_ = 0; index_ < ippacket_hub_.size(); index_ ++)
 							{
@@ -444,7 +443,7 @@ namespace xzh
 									continue;
 								}
 
-								if((*temp_)(l_ippacket_data, l_ippacket_data.size(), netdevice_info_))
+								if((*temp_)(ip_packet_node_, ip_packet_node_->get_packet_data().size(), netdevice_info_))
 								{
 								}
 								else
