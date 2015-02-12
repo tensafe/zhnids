@@ -21,7 +21,7 @@ namespace xzh
 	{
 		typedef vector<pair<string, netdevice_ptr> > device_list;
 		typedef vector<pcap_t* > device_pcap_list;
-		typedef pcap_hub_impl<string, bool (vector<unsigned char>&, int, netdevice_ptr) > ipfragment_hub;
+		typedef pcap_hub_impl<string, bool (ip_packet_node_ptr, int, netdevice_ptr) > ipfragment_hub;
 
 		typedef struct _user_data
 		{
@@ -287,13 +287,15 @@ namespace xzh
 					}
 
 					int idatalen = pkt_header->caplen - 14;
-					vector<unsigned char> data_vector;
-					data_vector.resize(idatalen);
+
+					ip_packet_node_ptr l_ip_packet_node_pt = ip_packet_node_ptr(new ip_packet_node());
+
+					l_ip_packet_node_pt->set_packet_data().resize(idatalen);
 				
 					//memcpy(&data_vector[0], (char*)(pkt_data + 14), idatalen);
-					copy(pkt_data + 14, pkt_data + pkt_header->caplen, data_vector.begin());
+					copy(pkt_data + 14, pkt_data + pkt_header->caplen, l_ip_packet_node_pt->set_packet_data().begin());
 
-					if (data_vector.empty())
+					if (l_ip_packet_node_pt->set_packet_data().empty())
 					{
 						debughelp::safe_debugstr(200, "copy data error, len: %d", idatalen);
 						break;
@@ -309,7 +311,7 @@ namespace xzh
 
 						try
 						{
-							if((*temp_)(data_vector, idatalen, l_netdevice_ptr))
+							if((*temp_)(l_ip_packet_node_pt, idatalen, l_netdevice_ptr))
 							{
 							}
 							else

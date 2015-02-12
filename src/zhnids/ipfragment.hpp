@@ -8,6 +8,7 @@
 #include <boost/threadpool.hpp>
 #endif
 
+#include <boost/range.hpp>
 #include <zhnids/net_header.hpp>
 #include <zhnids/stage/pcap_hub.hpp>
 
@@ -53,7 +54,8 @@ namespace xzh
 
 		};
 
-		typedef vector<unsigned char> ip_fragment_data;
+		//typedef vector<unsigned char> ip_fragment_data;
+		typedef boost::iterator_range<ip_packet_data::iterator> ip_fragment_data;
 		typedef map<u_short, ip_fragment_data> ip_fragment_group_data;
 		struct ip_fragment_s
 		{
@@ -219,7 +221,7 @@ namespace xzh
 
 	class ipfragment
 	{
-		typedef pcap_hub_impl<string, bool (vector<unsigned char>&, int, netdevice_ptr) > ippacket_hub;
+		typedef pcap_hub_impl<string, bool (ip_packet_node_ptr, int, netdevice_ptr) > ippacket_hub;
 	public:
 #ifdef USE_THREAD_POOL
 		ipfragment()
@@ -234,16 +236,16 @@ namespace xzh
 			return ippacket_hub_.add_handler(strkey, callfun_);
 		}
 
-		bool ipfrag_handler(std::vector<unsigned char> &data_, int len, netdevice_ptr netdevice_info_)
+		bool ipfrag_handler(ip_packet_node_ptr ip_packet_node_, int len, netdevice_ptr netdevice_info_)
 		{
 #ifdef USE_THREAD_POOL
-			return ip_fragment_fifo_pool_.schedule(boost::bind(&ipfragment::inner_ipfrag_handler, this, data_, len, netdevice_info_));
+			return ip_fragment_fifo_pool_.schedule(boost::bind(&ipfragment::inner_ipfrag_handler, this, ip_packet_node_, len, netdevice_info_));
 #else
 			return inner_ipfrag_handler(data_, len, netdevice_info_);
 #endif
 		}
 
-		bool inner_ipfrag_handler(std::vector<unsigned char> &data_, int len, netdevice_ptr netdevice_info_)
+		bool inner_ipfrag_handler(ip_packet_node_ptr ip_packet_node_, int len, netdevice_ptr netdevice_info_)
 		{
 			do 
 			{
@@ -252,7 +254,7 @@ namespace xzh
 					break;
 				}
 
-				xzhnet_ipv4_hdr* iphdr_ = (xzhnet_ipv4_hdr*)&data_[0];
+				xzhnet_ipv4_hdr* iphdr_ = (xzhnet_ipv4_hdr*)&(ip_packet_node_->get_packet_data()[0]);
 
 				if (iphdr_->ip_hl < 5)
 				{
@@ -282,7 +284,7 @@ namespace xzh
 				//check sum
 				if (iphdr_->ip_sum != 0)
 				{
-					if (checksum(&data_[0], iphdr_->ip_hl << 2) != 0)
+					if (checksum((void*)&(ip_packet_node_->get_packet_data()[0]), iphdr_->ip_hl << 2) != 0)
 					{
 						break;
 					}
@@ -317,7 +319,7 @@ namespace xzh
 							continue;
 						}
 
-						if((*temp_)(data_, len, netdevice_info_))
+						if((*temp_)(ip_packet_node_, len, netdevice_info_))
 						{
 						}
 						else
@@ -497,9 +499,9 @@ namespace xzh
 
 	class ippacket
 	{
-		typedef pcap_hub_impl<string, bool (vector<unsigned char>&, int, netdevice_ptr) > tcppacket_hub;
-		typedef pcap_hub_impl<string, bool (vector<unsigned char>&, int, netdevice_ptr) > udppacket_hub;
-		typedef pcap_hub_impl<string, bool (vector<unsigned char>&, int, netdevice_ptr) > icmppacket_hub;
+		typedef pcap_hub_impl<string, bool (ip_packet_node_ptr, int, netdevice_ptr) > tcppacket_hub;
+		typedef pcap_hub_impl<string, bool (ip_packet_node_ptr, int, netdevice_ptr) > udppacket_hub;
+		typedef pcap_hub_impl<string, bool (ip_packet_node_ptr, int, netdevice_ptr) > icmppacket_hub;
 	public:
 		template <typename TFun>
 		bool add_tcp_handler(string strkey, TFun callfun_)
@@ -519,13 +521,13 @@ namespace xzh
 			return icmppacket_hub_.add_handler(strkey, callfun_);
 		}
 
-		bool ippacket_handler(std::vector<unsigned char> &data_, int len, netdevice_ptr netdeice_info_)
+		bool ippacket_handler(ip_packet_node_ptr ip_packet_node_, int len, netdevice_ptr netdeice_info_)
 		{
 			bool bretvalue = false;
 
 			do 
 			{
-				xzhnet_ipv4_hdr* iphdr_ = (xzhnet_ipv4_hdr*)&data_[0];
+				xzhnet_ipv4_hdr* iphdr_ = (xzhnet_ipv4_hdr*)&(ip_packet_node_->get_packet_data()[0]);
 				if (iphdr_->ip_p == IPPROTO_ICMP)
 				{
 					for (size_t index_ = 0; index_ < icmppacket_hub_.size(); index_ ++)
@@ -536,7 +538,7 @@ namespace xzh
 							continue;
 						}
 
-						if((*temp_)(data_, data_.size(), netdeice_info_))
+						if((*temp_)(ip_packet_node_, ip_packet_node_->get_packet_data().size(), netdeice_info_))
 						{
 						}
 						else
@@ -556,7 +558,7 @@ namespace xzh
 							continue;
 						}
 
-						if((*temp_)(data_, data_.size(), netdeice_info_))
+						if((*temp_)(ip_packet_node_, ip_packet_node_->get_packet_data().size(), netdeice_info_))
 						{
 						}
 						else
@@ -576,7 +578,7 @@ namespace xzh
 							continue;
 						}
 
-						if((*temp_)(data_, data_.size(), netdeice_info_))
+						if((*temp_)(ip_packet_node_, ip_packet_node_->get_packet_data().size(), netdeice_info_))
 						{
 						}
 						else

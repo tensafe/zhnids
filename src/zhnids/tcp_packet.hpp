@@ -7,6 +7,7 @@
 
 #include <boost/thread.hpp>
 #include <boost/timer.hpp>
+#include <boost/range.hpp>
 
 #include <zhnids/packet_header.hpp>
 #include <zhnids/stage/pcap_hub.hpp>
@@ -91,13 +92,15 @@ namespace xzh
 		typedef pcap_hub_impl<string,bool (tcp_packet_node_ptr) > tcp_data_hub;
 
 	public:
-		bool tcp_handler(vector<unsigned char> &data_, int len, netdevice_ptr l_netdevice_ptr)
+		bool tcp_handler(ip_packet_node_ptr ip_packet_node_, int len, netdevice_ptr l_netdevice_ptr)
 		{
 			bool bretvalue = false;
 
+			ip_packet_data data_ = ip_packet_node_->get_packet_data();
+
 			do
 			{
-				clear_timeout(l_netdevice_ptr);
+				clear_timeout(l_netdevice_ptr, ip_packet_node_);
 			}
 			while(false);
 
@@ -289,6 +292,7 @@ namespace xzh
 
 							}
 
+							l_tcp_queue_node_ptr->set_ip_packet_data() = ip_packet_node_;
 							notify_handler(l_tcp_queue_node_ptr);
 						}
 						/*else
@@ -317,6 +321,8 @@ namespace xzh
 					{
 
 					}
+
+					l_tcp_queue_node_ptr->set_ip_packet_data() = ip_packet_node_;
 					notify_handler(l_tcp_queue_node_ptr);
 
 					delete_stream(l_tcp_key);
@@ -343,6 +349,10 @@ namespace xzh
 					{
 
 					}
+
+					l_tcp_queue_node_ptr->set_ip_packet_data() = ip_packet_node_;
+					int irange_offset = (iphdr_->ip_hl << 2) + (tcphdr_->th_off << 2);
+					l_tcp_queue_node_ptr->set_tcp_packet_data() = boost::make_iterator_range(ip_packet_node_->set_packet_data().begin() + irange_offset, ip_packet_node_->set_packet_data().end());
 					notify_handler(l_tcp_queue_node_ptr);
 
 					//break;
@@ -392,6 +402,8 @@ namespace xzh
 						{
 
 						}
+
+						l_tcp_queue_node_ptr->set_ip_packet_data() = ip_packet_node_;
 						notify_handler(l_tcp_queue_node_ptr);
 
 						delete_stream(l_tcp_key);
@@ -423,9 +435,12 @@ namespace xzh
 
 					}
 
-					l_tcp_queue_node_ptr->set_tcp_packet_data().resize(datalen);
-					std::copy((unsigned char*)tcphdr_ + (tcphdr_->th_off << 2), (unsigned char*)tcphdr_ +  datalen + (tcphdr_->th_off << 2), l_tcp_queue_node_ptr->set_tcp_packet_data().begin());
+					//l_tcp_queue_node_ptr->set_tcp_packet_data().resize(datalen);
+					int irange_offset = (iphdr_->ip_hl << 2) + (tcphdr_->th_off << 2);
+					//std::copy((unsigned char*)tcphdr_ + (tcphdr_->th_off << 2), (unsigned char*)tcphdr_ +  datalen + (tcphdr_->th_off << 2), l_tcp_queue_node_ptr->set_tcp_packet_data().begin());
 					//std::copy((unsigned char*)tcphdr_ + (tcphdr_->th_off << 2), (unsigned char*)tcphdr_ +  datalen + (tcphdr_->th_off << 2), inserter(l_tcp_queue_node_ptr->set_tcp_packet_data(), l_tcp_queue_node_ptr->set_tcp_packet_data().end()));
+					l_tcp_queue_node_ptr->set_ip_packet_data() = ip_packet_node_;
+					l_tcp_queue_node_ptr->set_tcp_packet_data() = boost::make_iterator_range(ip_packet_node_->set_packet_data().begin() + irange_offset, ip_packet_node_->set_packet_data().end());
 
 					notify_handler(l_tcp_queue_node_ptr);
 				}
@@ -446,6 +461,7 @@ namespace xzh
 
 					}
 
+					l_tcp_queue_node_ptr->set_ip_packet_data() = ip_packet_node_;
 					notify_handler(l_tcp_queue_node_ptr);
 				}
 
@@ -596,7 +612,7 @@ namespace xzh
 
 			return bretvalue;
 		}
-		bool clear_timeout(netdevice_ptr l_netdevice_ptr)
+		bool clear_timeout(netdevice_ptr l_netdevice_ptr, ip_packet_node_ptr ip_packet_node_)
 		{
 			bool bretvalue = false;
 
@@ -623,6 +639,7 @@ namespace xzh
 
 						}
 
+						l_tcp_queue_node_ptr->set_ip_packet_data() = ip_packet_node_;
 						notify_handler(l_tcp_queue_node_ptr);
 
 						tcp_stream_map_.erase(pos++);

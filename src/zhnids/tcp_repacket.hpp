@@ -434,9 +434,9 @@ namespace xzh
 		}
 	public:
 		tcp_repacket()
-			:tcp_queue_fifo_pool_(1)
 		{
 			tcp_queue_mn_ptr = tcp_queue_manager_ptr(new tcp_queue_manager(tcp_retrans_hub_));
+			tcp_queue_fifo_pool_.size_controller().resize(boost::thread::hardware_concurrency());
 		}
 		~tcp_repacket()
 		{

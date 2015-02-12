@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include <boost/range.hpp>
 
 #include <boost/functional/hash.hpp>
 #include <boost/shared_ptr.hpp>
@@ -68,6 +69,24 @@ namespace xzh
 	typedef boost::shared_ptr<netdevice> netdevice_ptr;
 
 
+	typedef vector<unsigned char> ip_packet_data;
+	class ip_packet_node
+	{
+	public:
+		const ip_packet_data& get_packet_data()
+		{
+			return ip_packet_data_;
+		}
+
+		ip_packet_data& set_packet_data()
+		{
+			return ip_packet_data_;
+		}
+	private:
+		ip_packet_data ip_packet_data_;
+	};
+	typedef boost::shared_ptr<ip_packet_node> ip_packet_node_ptr;
+
 	enum xzh_tcp_state
 	{
 		tcp_connect = 0x10,
@@ -79,7 +98,8 @@ namespace xzh
 	class tcp_packet_node
 	{
 	public:
-		typedef vector<unsigned char>	tcp_packet_data;
+		//typedef vector<unsigned char>	tcp_packet_data;
+		typedef boost::iterator_range<ip_packet_data::iterator>	tcp_packet_data;
 		typedef vector<unsigned int>	tcp_tuple_data;
 
 	private:
@@ -121,7 +141,6 @@ namespace xzh
 		~tcp_packet_node()
 		{
 			tcp_tuple_data_.clear();
-			tcp_pakcet_data_.clear();
 		}
 	public:
 		template <typename data>
@@ -163,7 +182,8 @@ namespace xzh
 					break;
 				}
 
-				tcp_pakcet_data_.erase(tcp_pakcet_data_.begin(), tcp_pakcet_data_.begin() + iremove_len);
+				//tcp_pakcet_data_.erase(tcp_pakcet_data_.begin(), tcp_pakcet_data_.begin() + iremove_len);
+				tcp_pakcet_data_ = boost::make_iterator_range(tcp_pakcet_data_.begin() + iremove_len, tcp_pakcet_data_.end());
 
 				tcp_tuple_data_[len] = tcp_pakcet_data_.size();
 
@@ -172,6 +192,16 @@ namespace xzh
 			} while (false);
 
 			return bretvalue;
+		}
+
+		ip_packet_node_ptr &set_ip_packet_data()
+		{
+			return ip_packet_node_;
+		}
+
+		const ip_packet_node_ptr &get_ip_packet_data()
+		{
+			return ip_packet_node_;
 		}
 
 	public:
@@ -251,6 +281,7 @@ namespace xzh
 	private:
 		tcp_packet_data tcp_pakcet_data_;
 		tcp_tuple_data tcp_tuple_data_;
+		ip_packet_node_ptr ip_packet_node_;
 		netdevice_ptr	netdevice_ptr_;
 	};
 	typedef boost::shared_ptr<tcp_packet_node> tcp_packet_node_ptr;
