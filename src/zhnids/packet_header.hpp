@@ -290,7 +290,7 @@ namespace xzh
 	class udp_packet_node
 	{
 	public:
-		typedef vector<unsigned char> udp_packet_data;
+		typedef boost::iterator_range<ip_packet_data::iterator>	 udp_packet_data;
 		typedef vector<unsigned int>  udp_tuple_data;
 
 	private:
@@ -320,7 +320,6 @@ namespace xzh
 		~udp_packet_node()
 		{
 			udp_tuple_data_.clear();
-			udp_packet_data_.clear();
 		}
 	public:
 		template <typename data>
@@ -357,7 +356,9 @@ namespace xzh
 					bretvalue = true;
 					break;
 				}
-				udp_packet_data_.erase(udp_packet_data_.begin(), udp_packet_data_.begin() + iremove_len);
+				//udp_packet_data_.erase(udp_packet_data_.begin(), udp_packet_data_.begin() + iremove_len);
+				udp_packet_data_ = boost::make_iterator_range(udp_packet_data_.begin() + iremove_len, udp_packet_data_.end());
+
 				bretvalue = true;
 			} while (false);
 
@@ -394,6 +395,17 @@ namespace xzh
 		{
 			return (unsigned short)udp_tuple_data_[dstport];
 		}
+
+		ip_packet_node_ptr &set_ip_packet_data()
+		{
+			return ip_packet_node_;
+		}
+
+		const ip_packet_node_ptr &get_ip_packet_data()
+		{
+			return ip_packet_node_;
+		}
+
 	public:
 		netdevice_ptr get_netdevice_ptr()
 		{
@@ -416,6 +428,7 @@ namespace xzh
 	private:
 		udp_tuple_data	udp_tuple_data_;
 		udp_packet_data	udp_packet_data_;
+		ip_packet_node_ptr ip_packet_node_;
 		netdevice_ptr   netdevice_ptr_;
 	};
 	typedef boost::shared_ptr<udp_packet_node> udp_packet_node_ptr;

@@ -49,6 +49,7 @@ namespace xzh
 		{
 			bool bretvalue = false;
 
+			boost::timer timer_;
 			do 
 			{
 				ip_packet_data data_ = ip_packet_node_->get_packet_data();
@@ -65,11 +66,11 @@ namespace xzh
 
 				if (udphdr_->uh_sum != 0)
 				{
-					if(udp_checmsum(udphdr_, uudp_len, iphdr_->ip_src.S_un.S_addr, iphdr_->ip_dst.S_un.S_addr) != 0)
+				/*	if(udp_checmsum(udphdr_, uudp_len, iphdr_->ip_src.S_un.S_addr, iphdr_->ip_dst.S_un.S_addr) != 0)
 					{
 						debughelp::safe_debugstr(200, "udp check sum error");
 						break;
-					}
+					}*/
 				}
 
 				if (udp_repacket_hub_.size() <= 0)
@@ -94,14 +95,16 @@ namespace xzh
 
 				}
 
-				l_udp_packet_ptr_->set_udp_packet_data().resize(uudp_len - sizeof(xzhnet_udp_hdr));
-				std::copy((unsigned char*)udphdr_ + sizeof(xzhnet_udp_hdr), (unsigned char*)udphdr_ + uudp_len, l_udp_packet_ptr_->set_udp_packet_data().begin());
-
+				l_udp_packet_ptr_->set_ip_packet_data() = ip_packet_node_;
+				int irange_offset = (iphdr_->ip_hl << 2) + sizeof(xzhnet_udp_hdr);
+				l_udp_packet_ptr_->set_udp_packet_data() = boost::make_iterator_range(ip_packet_node_->set_packet_data().begin() + irange_offset, ip_packet_node_->set_packet_data().end());
 				notify_udppacket(l_udp_packet_ptr_);
 
 				bretvalue = true;
 
 			} while (false);
+
+			debughelp::safe_debugstr(200, "udp packet timer:%f", timer_.elapsed());
 
 			return bretvalue;
 		}

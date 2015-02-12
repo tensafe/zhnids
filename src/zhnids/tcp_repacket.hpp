@@ -164,7 +164,13 @@ namespace xzh
 								boost::mutex::scoped_lock lock(map_tcp_queue_data_s_mutex);
 								map_tcp_queue_data_s[ipacket_seq] = tcp_node_ptr;
 								seq_next_r = max(tcp_node_ptr->getackseq(),seq_next_r);
-								map_tcp_queue_data::iterator pos_first = map_tcp_queue_data_s.begin();
+
+								int map_tcp_queru_size = map_tcp_queue_data_s.size();
+								if (map_tcp_queru_size > 1000)
+								{
+									debughelp::safe_debugstr(200, "ipacket seq > seq_next_s : %d", map_tcp_queru_size);
+								}
+								//map_tcp_queue_data::iterator pos_first = map_tcp_queue_data_s.begin();
 								//xzh::debughelp::safe_debugstr(200, "now seq:%08x,next_s:%08x, map_tcp_queue_first:%08x", ipacket_seq, seq_next_s, pos_first->first);
 							}
 						} while (false);
@@ -279,9 +285,12 @@ namespace xzh
 								//seq_next_s = tcp_node_ptr->getackseq();
 								seq_next_s = max(tcp_node_ptr->getackseq(),seq_next_s);
 								map_tcp_queue_data_r[ipacket_seq] = tcp_node_ptr;
-								map_tcp_queue_data::iterator pos_first = map_tcp_queue_data_r.begin();
-								//xzh::debughelp::safe_debugstr(200, "now seq:%08x,next_r:%08x, map_tcp_queue_first:%08x", ipacket_seq, seq_next_r, pos_first->first);
 
+								int map_tcp_queru_size = map_tcp_queue_data_r.size();
+								if (map_tcp_queru_size > 1000)
+								{
+									debughelp::safe_debugstr(200, "ipacket seq > seq_next_r : %d", map_tcp_queru_size);
+								}
 							}
 						} while (false);
 					}
@@ -436,7 +445,8 @@ namespace xzh
 		tcp_repacket()
 		{
 			tcp_queue_mn_ptr = tcp_queue_manager_ptr(new tcp_queue_manager(tcp_retrans_hub_));
-			tcp_queue_fifo_pool_.size_controller().resize(boost::thread::hardware_concurrency());
+			int ihard_ware_count = boost::thread::hardware_concurrency();
+			tcp_queue_fifo_pool_.size_controller().resize(ihard_ware_count);
 		}
 		~tcp_repacket()
 		{
@@ -444,9 +454,10 @@ namespace xzh
 		}
 		bool repacket_handler(tcp_packet_node_ptr tcp_queue_node_ptr_)
 		{
-			if ((tcp_queue_fifo_pool_.pending() !=0) && (tcp_queue_fifo_pool_.pending() % 1000 == 0))
+			int ipending_size = tcp_queue_fifo_pool_.pending();
+			if (ipending_size > 100)
 			{
-				debughelp::safe_debugstr(200, "tcp repacket pending:%d", tcp_queue_fifo_pool_.pending());
+				debughelp::safe_debugstr(200, "tcp repacket pending:%d", ipending_size);
 			}
 
 			return tcp_queue_fifo_pool_.schedule(boost::bind(&tcp_repacket::inner_repacket_handler, this, tcp_queue_node_ptr_));
