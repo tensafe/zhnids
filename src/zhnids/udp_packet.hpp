@@ -40,17 +40,18 @@ namespace xzh
 
 		}
 	public:
-		bool udp_handler(vector<unsigned char> &data_, int len, netdevice_ptr l_netdevice_ptr)
+		bool udp_handler(ip_packet_node_ptr ip_packet_node_, int len, netdevice_ptr l_netdevice_ptr)
 		{
-			return udp_repacket_thread_pool_.schedule(boost::bind(&udppacket::inner_udp_handler, this, data_, len, l_netdevice_ptr));
+			return udp_repacket_thread_pool_.schedule(boost::bind(&udppacket::inner_udp_handler, this, ip_packet_node_, len, l_netdevice_ptr));
 		}
 
-		bool inner_udp_handler(vector<unsigned char> &data_, int len, netdevice_ptr l_netdevice_ptr)
+		bool inner_udp_handler(ip_packet_node_ptr ip_packet_node_, int len, netdevice_ptr l_netdevice_ptr)
 		{
 			bool bretvalue = false;
 
 			do 
 			{
+				ip_packet_data data_ = ip_packet_node_->get_packet_data();
 				xzhnet_ipv4_hdr* iphdr_ = (xzhnet_ipv4_hdr*)&data_[0];
 				xzhnet_udp_hdr*  udphdr_ = (xzhnet_udp_hdr*)&data_[iphdr_->ip_hl << 2];
 				u_short uipdatalen = ntohs(iphdr_->ip_len);

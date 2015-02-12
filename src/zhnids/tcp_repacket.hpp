@@ -444,6 +444,11 @@ namespace xzh
 		}
 		bool repacket_handler(tcp_packet_node_ptr tcp_queue_node_ptr_)
 		{
+			if ((tcp_queue_fifo_pool_.pending() !=0) && (tcp_queue_fifo_pool_.pending() % 1000 == 0))
+			{
+				debughelp::safe_debugstr(200, "tcp repacket pending:%d", tcp_queue_fifo_pool_.pending());
+			}
+
 			return tcp_queue_fifo_pool_.schedule(boost::bind(&tcp_repacket::inner_repacket_handler, this, tcp_queue_node_ptr_));
 		}
 
