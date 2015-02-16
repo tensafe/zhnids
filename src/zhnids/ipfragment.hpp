@@ -4,9 +4,7 @@
 #include <vector>
 #include <string>
 #include <map>
-#ifdef USE_THREAD_POOL
 #include <boost/threadpool.hpp>
-#endif
 
 #include <boost/range.hpp>
 #include <zhnids/net_header.hpp>
@@ -222,12 +220,10 @@ namespace xzh
 	{
 		typedef pcap_hub_impl<string, bool (ip_packet_node_ptr, int, netdevice_ptr) > ippacket_hub;
 	public:
-#ifdef USE_THREAD_POOL
 		ipfragment()
 			:ip_fragment_fifo_pool_(1)
 		{
 		}
-#endif
 	public:
 		template <typename TFun>
 		bool add_ippacket_handler(string strkey, TFun callfun_)
@@ -237,11 +233,7 @@ namespace xzh
 
 		bool ipfrag_handler(ip_packet_node_ptr ip_packet_node_, int len, netdevice_ptr netdevice_info_)
 		{
-#ifdef USE_THREAD_POOL
 			return ip_fragment_fifo_pool_.schedule(boost::bind(&ipfragment::inner_ipfrag_handler, this, ip_packet_node_, len, netdevice_info_));
-#else
-			return inner_ipfrag_handler(data_, len, netdevice_info_);
-#endif
 		}
 
 		bool inner_ipfrag_handler(ip_packet_node_ptr ip_packet_node_, int len, netdevice_ptr netdevice_info_)
