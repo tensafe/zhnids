@@ -17,6 +17,7 @@ namespace xzh
 {
 	class tcppacket
 	{
+		typedef boost::shared_ptr<boost::thread> boost_shared_ptr_thread;
 	public:
 		struct psuedo_hdr
 		{
@@ -92,17 +93,30 @@ namespace xzh
 		typedef pcap_hub_impl<string,bool (tcp_packet_node_ptr) > tcp_data_hub;
 
 	public:
+		tcppacket()
+		{
+			clear_time_out_thread = boost_shared_ptr_thread(new boost::thread(boost::bind(&tcppacket::clear_timeout_proc, this)));
+		}
+
+		~tcppacket()
+		{
+			if (clear_time_out_thread)
+			{
+				clear_time_out_thread->interrupt();
+			}
+		}
+	public:
 		bool tcp_handler(ip_packet_node_ptr ip_packet_node_, int len, netdevice_ptr l_netdevice_ptr)
 		{
 			bool bretvalue = false;
 
 			ip_packet_data data_ = ip_packet_node_->get_packet_data();
 
-			do
-			{
-				clear_timeout(l_netdevice_ptr, ip_packet_node_);
-			}
-			while(false);
+			//do
+			//{
+			//	clear_timeout(/*l_netdevice_ptr, ip_packet_node_*/);
+			//}
+			//while(false);
 
 			do 
 			{
@@ -612,7 +626,8 @@ namespace xzh
 
 			return bretvalue;
 		}
-		bool clear_timeout(netdevice_ptr l_netdevice_ptr, ip_packet_node_ptr ip_packet_node_)
+
+		bool clear_timeout(/*netdevice_ptr l_netdevice_ptr, ip_packet_node_ptr ip_packet_node_*/)
 		{
 			bool bretvalue = false;
 
@@ -634,7 +649,10 @@ namespace xzh
 							tcp_end,
 							0));
 
-						if(l_tcp_queue_node_ptr->set_netdevice_ptr(l_netdevice_ptr))
+						netdevice_ptr l_netdevice_ptr;
+						ip_packet_node_ptr ip_packet_node_;
+
+						if(l_tcp_queue_node_ptr->set_netdevice_ptr(l_netdevice_ptr));
 						{
 
 						}
@@ -656,11 +674,30 @@ namespace xzh
 			return bretvalue;
 		}
 
+		bool clear_timeout_proc()
+		{
+			bool bretvalue = false;
 
+			try
+			{
+				while(true)
+				{
+					clear_timeout();
+					boost::this_thread::interruptible_wait(tcp_max_time_out * 1000);
+				}
+			}
+			catch(...)
+			{
+
+			}
+
+			return true;
+		}
 	private:
 		boost::mutex	tcp_stream_map_mutex_;
 		tcp_stream_map tcp_stream_map_;
 		tcp_data_hub	tcp_data_hub_;
+		boost_shared_ptr_thread clear_time_out_thread;
 	};
 }
 
