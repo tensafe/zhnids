@@ -8,7 +8,6 @@
 #include <zhnids/stage/outdebug.hpp>
 #include <zhnids/stage/pcap_hub.hpp>
 #include <zhnids/stage/map_ptr_manager.hpp>
-#include <boost/threadpool.hpp>
 
 using namespace std;
 
@@ -445,8 +444,6 @@ namespace xzh
 		tcp_repacket()
 		{
 			tcp_queue_mn_ptr = tcp_queue_manager_ptr(new tcp_queue_manager(tcp_retrans_hub_));
-			int ihard_ware_count = boost::thread::hardware_concurrency();
-			tcp_queue_fifo_pool_.size_controller().resize(ihard_ware_count);
 		}
 		~tcp_repacket()
 		{
@@ -454,13 +451,8 @@ namespace xzh
 		}
 		bool repacket_handler(tcp_packet_node_ptr tcp_queue_node_ptr_)
 		{
-			int ipending_size = tcp_queue_fifo_pool_.pending();
-			if (ipending_size > 100)
-			{
-				debughelp::safe_debugstr(200, "tcp repacket pending:%d", ipending_size);
-			}
-
-			return tcp_queue_fifo_pool_.schedule(boost::bind(&tcp_repacket::inner_repacket_handler, this, tcp_queue_node_ptr_));
+			//return tcp_queue_fifo_pool_.schedule(boost::bind(&tcp_repacket::inner_repacket_handler, this, tcp_queue_node_ptr_));
+			return inner_repacket_handler(tcp_queue_node_ptr_);
 		}
 
 		bool inner_repacket_handler(tcp_packet_node_ptr tcp_queue_node_ptr_)
@@ -492,7 +484,6 @@ namespace xzh
 	private:
 		tcp_repacket_hub tcp_retrans_hub_;
 		tcp_queue_manager_ptr tcp_queue_mn_ptr;
-		boost::threadpool::fifo_pool tcp_queue_fifo_pool_;
 	};
 };
 #endif

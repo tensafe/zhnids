@@ -82,8 +82,19 @@ namespace xzh
 		{
 			return ip_packet_data_;
 		}
+
+		const netdevice_ptr& get_net_device()
+		{
+			return netdevice_ptr_;
+		}
+		
+		netdevice_ptr &set_net_device()
+		{
+			return netdevice_ptr_;
+		}
 	private:
 		ip_packet_data ip_packet_data_;
+		netdevice_ptr  netdevice_ptr_;
 	};
 	typedef boost::shared_ptr<ip_packet_node> ip_packet_node_ptr;
 

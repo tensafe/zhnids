@@ -652,7 +652,7 @@ namespace xzh
 						netdevice_ptr l_netdevice_ptr;
 						ip_packet_node_ptr ip_packet_node_;
 
-						if(l_tcp_queue_node_ptr->set_netdevice_ptr(l_netdevice_ptr));
+						if(l_tcp_queue_node_ptr->set_netdevice_ptr(l_netdevice_ptr))
 						{
 
 						}

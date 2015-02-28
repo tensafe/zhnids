@@ -8,6 +8,9 @@
 
 #include <boost/timer.hpp>
 #include <boost/thread.hpp>
+#include <boost/circular_buffer.hpp>
+#include <boost/bind.hpp>
+
 #include <zhnids/packet_header.hpp>
 #include <zhnids/stage/pcap_hub.hpp>
 #include <zhnids/stage/outdebug.hpp>
@@ -22,6 +25,8 @@ namespace xzh
 		typedef vector<pair<string, netdevice_ptr> > device_list;
 		typedef vector<pcap_t* > device_pcap_list;
 		typedef pcap_hub_impl<string, bool (ip_packet_node_ptr, int, netdevice_ptr) > ipfragment_hub;
+		typedef boost::circular_buffer<ip_packet_node_ptr> circular_ip_packet_buffer;
+		typedef boost::shared_ptr<boost::thread> boost_thread_ptr;
 
 		typedef struct _user_data
 		{
@@ -30,7 +35,13 @@ namespace xzh
 		}user_data, *puser_data;
 
 	public:
-		bool start(const string strfilter, int buffer_size = 10, int time_out = 0)
+		explicit xzhnids(size_t capacity)
+			:circular_ip_packet_buffer_(capacity)
+		{
+
+		}
+
+		bool start(const string strfilter, int buffer_size = 10, int time_out = 0, int consumer_size = 1)
 		{
 			try
 			{
@@ -74,7 +85,12 @@ namespace xzh
 					for (device_list::iterator pos = device_list_.begin(); pos != device_list_.end(); pos ++)
 					{
 						string strdevname(pos->first);
-						boost::thread *l_start_thread = thread_group_.create_thread(boost::bind(&xzhnids::pcapt_thread, this, strdevname, strfilter, pos->second, buffer_size, time_out));
+						thread_group_.create_thread(boost::bind(&xzhnids::pcapt_thread, this, strdevname, strfilter, pos->second, buffer_size, time_out));
+					}
+
+					for (int i = 0; i < consumer_size; i ++)
+					{
+						thread_group_consumer_.create_thread(boost::bind(&xzhnids::inner_consumer_handler, this));
 					}
 
 				} while (false);
@@ -301,35 +317,68 @@ namespace xzh
 						break;
 					}
 
-					for (size_t index_ = 0; index_ < ipfragment_hub_.size(); index_ ++)
-					{
-						ipfragment_hub::return_type_ptr temp_ = ipfragment_hub_[index_];
-						if (!temp_)
-						{
-							continue;
-						}
+					l_ip_packet_node_pt->set_net_device() = l_netdevice_ptr;
 
-						try
-						{
-							if((*temp_)(l_ip_packet_node_pt, idatalen, l_netdevice_ptr))
-							{
-							}
-							else
-							{
-							}
-						}
-						catch(...)
-						{
-						}
+
+					{
+						//lock
+						boost::mutex::scoped_lock lock_(mutex_circular_);
+						circular_ip_packet_buffer_.push_front(l_ip_packet_node_pt);
+						//unlock
 					}
 
 				} while (false);
 			}
 			catch(...)
 			{
-				debughelp::safe_debugstr(200, "afasff");
 			}
 		}
+
+		bool inner_consumer_handler()
+		{
+			while(true)
+			{
+				//lock..
+				boost::mutex::scoped_lock lock_(mutex_circular_);
+				if (circular_ip_packet_buffer_.empty())
+				{
+					// unlock.
+					lock_.unlock();
+					boost::this_thread::interruptible_wait(10);
+					continue;
+				}
+
+				ip_packet_node_ptr l_ip_packet_node_pt = circular_ip_packet_buffer_.back();
+				circular_ip_packet_buffer_.pop_back();
+				//unlock...
+				lock_.unlock();
+
+				for (size_t index_ = 0; index_ < ipfragment_hub_.size(); index_ ++)
+				{
+					ipfragment_hub::return_type_ptr temp_ = ipfragment_hub_[index_];
+					if (!temp_)
+					{
+						continue;
+					}
+
+					try
+					{
+						if((*temp_)(l_ip_packet_node_pt, l_ip_packet_node_pt->get_packet_data().size(), l_ip_packet_node_pt->set_net_device()))
+						{
+						}
+						else
+						{
+						}
+					}
+					catch(...)
+					{
+					}
+				}
+			}
+			
+			return true;
+		}
+
 		static void pcap_handler (u_char *user, const struct pcap_pkthdr *pkt_header, const u_char *pkt_data)
 		{
 			try
@@ -417,6 +466,9 @@ namespace xzh
 		device_pcap_list device_pcap_list_;
 		boost::thread_group thread_group_;
 		ipfragment_hub ipfragment_hub_;
+		circular_ip_packet_buffer circular_ip_packet_buffer_;
+		boost::thread_group thread_group_consumer_;
+		boost::mutex mutex_circular_;
 	};
 };
 #endif

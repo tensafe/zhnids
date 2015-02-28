@@ -4,7 +4,6 @@
 #include <vector>
 #include <string>
 
-#include <boost/threadpool.hpp>
 #include <zhnids/packet_header.hpp> 
 #include <zhnids/stage/outdebug.hpp> 
 #include <zhnids/stage/pcap_hub.hpp>
@@ -35,21 +34,20 @@ namespace xzh
 
 	public:
 		udppacket()
-			:udp_repacket_thread_pool_(1)
 		{
 
 		}
 	public:
 		bool udp_handler(ip_packet_node_ptr ip_packet_node_, int len, netdevice_ptr l_netdevice_ptr)
 		{
-			return udp_repacket_thread_pool_.schedule(boost::bind(&udppacket::inner_udp_handler, this, ip_packet_node_, len, l_netdevice_ptr));
+			return inner_udp_handler(ip_packet_node_, len, l_netdevice_ptr);
 		}
 
-		bool inner_udp_handler(ip_packet_node_ptr ip_packet_node_, int len, netdevice_ptr l_netdevice_ptr)
+		inline bool inner_udp_handler(ip_packet_node_ptr ip_packet_node_, int len, netdevice_ptr l_netdevice_ptr)
 		{
 			bool bretvalue = false;
 
-			boost::timer timer_;
+			//boost::timer timer_;
 			do 
 			{
 				ip_packet_data data_ = ip_packet_node_->get_packet_data();
@@ -78,6 +76,7 @@ namespace xzh
 					break;
 				}
 				
+
 				udp_packet_node_ptr l_udp_packet_ptr_ = udp_packet_node_ptr(new udp_packet_node(
 					ntohl(iphdr_->ip_src.S_un.S_addr),
 					ntohl(iphdr_->ip_dst.S_un.S_addr),
@@ -90,6 +89,7 @@ namespace xzh
 					break;
 				}
 
+
 				if(l_udp_packet_ptr_->set_netdevice_ptr(l_netdevice_ptr))
 				{
 
@@ -98,13 +98,15 @@ namespace xzh
 				l_udp_packet_ptr_->set_ip_packet_data() = ip_packet_node_;
 				int irange_offset = (iphdr_->ip_hl << 2) + sizeof(xzhnet_udp_hdr);
 				l_udp_packet_ptr_->set_udp_packet_data() = boost::make_iterator_range(ip_packet_node_->set_packet_data().begin() + irange_offset, ip_packet_node_->set_packet_data().end());
+
+
 				notify_udppacket(l_udp_packet_ptr_);
 
 				bretvalue = true;
 
 			} while (false);
 
-			debughelp::safe_debugstr(200, "udp packet timer:%f", timer_.elapsed());
+			//debughelp::safe_debugstr(200, "udp packet timer:%f", timer_.elapsed());
 
 			return bretvalue;
 		}
