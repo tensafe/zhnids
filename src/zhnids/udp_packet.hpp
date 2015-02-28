@@ -184,7 +184,6 @@ namespace xzh
 		}
 		private:
 			udp_repacket_hub udp_repacket_hub_;
-			boost::threadpool::fifo_pool udp_repacket_thread_pool_;
 	};
 };
 

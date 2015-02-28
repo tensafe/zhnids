@@ -9,6 +9,10 @@
 #include <boost/timer.hpp>
 #include <boost/thread.hpp>
 #include <boost/circular_buffer.hpp>
+#include <boost/thread/mutex.hpp>
+#include <boost/bind.hpp>
+#include <boost/thread/condition.hpp>
+#include <boost/thread/thread.hpp>
 #include <boost/bind.hpp>
 
 #include <zhnids/packet_header.hpp>
@@ -20,12 +24,54 @@ using namespace std;
 
 namespace xzh
 {
+	template <class T>
+	class bounded_buffer {
+	public:
+
+		typedef boost::circular_buffer<T> container_type;
+		typedef typename container_type::size_type size_type;
+		typedef typename container_type::value_type value_type;
+		typedef typename boost::call_traits<value_type>::param_type param_type;
+
+		explicit bounded_buffer(size_type capacity) : m_unread(0), m_container(capacity) {}
+
+		void push_front(param_type item) {
+			boost::mutex::scoped_lock lock(m_mutex);
+			m_not_full.wait(lock, boost::bind(&bounded_buffer<value_type>::is_not_full, this));
+			m_container.push_front(item);
+			++m_unread;
+			lock.unlock();
+			m_not_empty.notify_one();
+		}
+
+		void pop_back(value_type* pItem) {
+			boost::mutex::scoped_lock lock(m_mutex);
+			m_not_empty.wait(lock, boost::bind(&bounded_buffer<value_type>::is_not_empty, this));
+			*pItem = m_container[--m_unread];
+			lock.unlock();
+			m_not_full.notify_one();
+		}
+
+	private:
+		bounded_buffer(const bounded_buffer&);              // Disabled copy constructor
+		bounded_buffer& operator = (const bounded_buffer&); // Disabled assign operator
+
+		bool is_not_empty() const { return m_unread > 0; }
+		bool is_not_full() const { return m_unread < m_container.capacity(); }
+
+		size_type m_unread;
+		container_type m_container;
+		boost::mutex m_mutex;
+		boost::condition m_not_empty;
+		boost::condition m_not_full;
+	};
+
 	class xzhnids
 	{
 		typedef vector<pair<string, netdevice_ptr> > device_list;
 		typedef vector<pcap_t* > device_pcap_list;
 		typedef pcap_hub_impl<string, bool (ip_packet_node_ptr, int, netdevice_ptr) > ipfragment_hub;
-		typedef boost::circular_buffer<ip_packet_node_ptr> circular_ip_packet_buffer;
+		typedef bounded_buffer<ip_packet_node_ptr> bounded_ip_packet_buffer;
 		typedef boost::shared_ptr<boost::thread> boost_thread_ptr;
 
 		typedef struct _user_data
@@ -36,7 +82,7 @@ namespace xzh
 
 	public:
 		explicit xzhnids(size_t capacity)
-			:circular_ip_packet_buffer_(capacity)
+			:bounded_ip_packet_buffer_(capacity)
 		{
 
 		}
@@ -319,13 +365,14 @@ namespace xzh
 
 					l_ip_packet_node_pt->set_net_device() = l_netdevice_ptr;
 
+					bounded_ip_packet_buffer_.push_front(l_ip_packet_node_pt);
 
-					{
-						//lock
-						boost::mutex::scoped_lock lock_(mutex_circular_);
-						circular_ip_packet_buffer_.push_front(l_ip_packet_node_pt);
-						//unlock
-					}
+					//{
+					//	//lock
+					//	boost::mutex::scoped_lock lock_(mutex_circular_);
+					//	bounded_ip_packet_buffer_.push_front(l_ip_packet_node_pt);
+					//	//unlock
+					//}
 
 				} while (false);
 			}
@@ -338,20 +385,8 @@ namespace xzh
 		{
 			while(true)
 			{
-				//lock..
-				boost::mutex::scoped_lock lock_(mutex_circular_);
-				if (circular_ip_packet_buffer_.empty())
-				{
-					// unlock.
-					lock_.unlock();
-					boost::this_thread::interruptible_wait(10);
-					continue;
-				}
-
-				ip_packet_node_ptr l_ip_packet_node_pt = circular_ip_packet_buffer_.back();
-				circular_ip_packet_buffer_.pop_back();
-				//unlock...
-				lock_.unlock();
+				ip_packet_node_ptr l_ip_packet_node_pt;
+				bounded_ip_packet_buffer_.pop_back(&l_ip_packet_node_pt);
 
 				for (size_t index_ = 0; index_ < ipfragment_hub_.size(); index_ ++)
 				{
@@ -466,7 +501,7 @@ namespace xzh
 		device_pcap_list device_pcap_list_;
 		boost::thread_group thread_group_;
 		ipfragment_hub ipfragment_hub_;
-		circular_ip_packet_buffer circular_ip_packet_buffer_;
+		bounded_ip_packet_buffer bounded_ip_packet_buffer_;
 		boost::thread_group thread_group_consumer_;
 		boost::mutex mutex_circular_;
 	};

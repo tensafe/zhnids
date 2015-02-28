@@ -8,7 +8,6 @@
 #include <boost/logic/tribool.hpp>
 #include <boost/algorithm/hex.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/threadpool.hpp>
 #include <zhnids/stage/map_ptr_manager.hpp>
 #include <zhnids/stage/pcap_hub.hpp>
 #include <WinSock.h>
@@ -830,14 +829,14 @@ namespace xzh
 	{
 	public:
 		http_packet()
-			:http_packet_thread_pool_(1)
 		{
 
 		}
 
 		bool http_handler(xzh::tcp_packet_node_ptr l_tcp_packet_node_ptr)
 		{
-			return http_packet_thread_pool_.schedule(boost::bind(&http_packet::inner_http_handler, this, l_tcp_packet_node_ptr));
+			//return http_packet_thread_pool_.schedule(boost::bind(&http_packet::inner_http_handler, this, l_tcp_packet_node_ptr));
+			return inner_http_handler(l_tcp_packet_node_ptr);
 		}
 
 		bool inner_http_handler(xzh::tcp_packet_node_ptr l_tcp_packet_node_ptr)
@@ -896,7 +895,6 @@ namespace xzh
 		http_map_session_ptr http_map_session_ptr_;
 		http_packet_data_hub http_packet_data_hub_;
 		http_packet_filter_hub http_packet_filter_hub_;
-		boost::threadpool::fifo_pool http_packet_thread_pool_;
 	};
 };
 
