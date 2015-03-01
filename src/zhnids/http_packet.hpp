@@ -591,6 +591,7 @@ namespace xzh
 						yield return boost::indeterminate;
 					}
 
+
 					// CRLF.
 					if (c != '\r') return false;
 					yield return boost::indeterminate;
@@ -603,8 +604,7 @@ namespace xzh
 						{
 							try
 							{
-								content_length_ =
-									boost::lexical_cast<std::size_t>(req.headers[i].value);
+								content_length_ = boost::lexical_cast<std::size_t>(req.headers[i].value);
 							}
 							catch (boost::bad_lexical_cast&)
 							{
