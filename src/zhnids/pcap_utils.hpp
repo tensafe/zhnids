@@ -66,12 +66,54 @@ namespace xzh
 		boost::condition m_not_full;
 	};
 
+	template <class T>
+	class bounded_buffer_space_optimized {
+	public:
+
+		typedef boost::circular_buffer_space_optimized<T> container_type;
+		typedef typename container_type::size_type size_type;
+		typedef typename container_type::value_type value_type;
+		typedef typename boost::call_traits<value_type>::param_type param_type;
+
+		explicit bounded_buffer_space_optimized(size_type capacity) : m_container(capacity) {}
+
+		void push_front(param_type item) {
+			boost::mutex::scoped_lock lock(m_mutex);
+			m_not_full.wait(lock, boost::bind(&bounded_buffer_space_optimized<value_type>::is_not_full, this));
+			m_container.push_front(item);
+			lock.unlock();
+			m_not_empty.notify_one();
+		}
+
+		void pop_back(value_type* pItem) {
+			boost::mutex::scoped_lock lock(m_mutex);
+			m_not_empty.wait(lock, boost::bind(&bounded_buffer_space_optimized<value_type>::is_not_empty, this));
+			*pItem = m_container.back();
+			m_container.pop_back();
+			lock.unlock();
+			m_not_full.notify_one();
+		}
+
+	private:
+
+		bounded_buffer_space_optimized(const bounded_buffer_space_optimized&);              // Disabled copy constructor
+		bounded_buffer_space_optimized& operator = (const bounded_buffer_space_optimized&); // Disabled assign operator
+
+		bool is_not_empty() const { return m_container.size() > 0; }
+		bool is_not_full() const { return m_container.size() < m_container.capacity(); }
+
+		container_type m_container;
+		boost::mutex m_mutex;
+		boost::condition m_not_empty;
+		boost::condition m_not_full;
+	};
+
 	class xzhnids
 	{
 		typedef vector<pair<string, netdevice_ptr> > device_list;
 		typedef vector<pcap_t* > device_pcap_list;
 		typedef pcap_hub_impl<string, bool (ip_packet_node_ptr, int, netdevice_ptr) > ipfragment_hub;
-		typedef bounded_buffer<ip_packet_node_ptr> bounded_ip_packet_buffer;
+		typedef bounded_buffer_space_optimized<ip_packet_node_ptr> bounded_ip_packet_buffer;
 		typedef boost::shared_ptr<boost::thread> boost_thread_ptr;
 
 		typedef struct _user_data
