@@ -591,11 +591,11 @@ namespace xzh
 						yield return boost::indeterminate;
 					}
 
-
 					// CRLF.
 					if (c != '\r') return false;
 					yield return boost::indeterminate;
 					if (c != '\n') return false;
+
 
 					// Check for optional Content-Length header.
 					for (std::size_t i = 0; i < req.headers.size(); ++i)
@@ -789,7 +789,7 @@ namespace xzh
 
 		bool filter_handler(tcp_packet_node_ptr l_tcp_packet_node_ptr)
 		{
-			bool bretvalue = true;
+			bool bretvalue = false;
 
 			for (size_t index_ = 0; index_ < http_packet_filter_hub_.size(); index_ ++)
 			{
