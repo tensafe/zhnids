@@ -640,7 +640,7 @@ namespace xzh
 		virtual boost::tribool switch_packet(xzh::tcp_packet_node_ptr l_tcp_packet_node_ptr) = 0;
 	};
 
-	typedef pcap_hub_impl<string, bool (tcp_packet_node_ptr, http_packet_data_ptr)> http_packet_data_hub;
+	typedef pcap_hub_impl<string, bool (tcp_packet_node_ptr, http_packet_data_ptr, bool &)> http_packet_data_hub;
 	typedef pcap_hub_impl<string, bool (tcp_packet_node_ptr, bool &)> http_packet_filter_hub;
 
 	class http_session : public session,
@@ -693,18 +693,23 @@ namespace xzh
 
 						while(true)
 						{
-							boost::tie(valid_request_, boost::tuples::ignore) = http_request_parse_.parse(http_packet_data_ptr_->set_http_request(), l_tcp_packet_node_ptr->get_tcp_packet_data().begin(), l_tcp_packet_node_ptr->get_tcp_packet_data().end());
+							boost::tie(valid_request_, boost::tuples::ignore) =
+								http_request_parse_.parse(http_packet_data_ptr_->set_http_request(),
+								l_tcp_packet_node_ptr->get_tcp_packet_data().begin(),
+								l_tcp_packet_node_ptr->get_tcp_packet_data().end());
 
 							if (!valid_request_)
 							{
 								return false;
 							}
 
+							//部分数据包，处理什么状态，未知
 							if (boost::indeterminate(valid_request_))
 							{
 								yield return valid_request_;
 							}
 
+							//完整数据包
 							if (valid_request_)
 							{
 								break;
@@ -712,51 +717,53 @@ namespace xzh
 						}
 					}
 
-					notify_handler(l_tcp_packet_node_ptr, http_packet_data_ptr_);
-
-					yield return true;
-
-					if (!l_tcp_packet_node_ptr->isclient())
+					if(!notify_handler(l_tcp_packet_node_ptr, http_packet_data_ptr_))
 					{
-						if (!http_packet_data_ptr_)
+						//不需要关心下面的回复内容...
+						yield return true;
+						while (!l_tcp_packet_node_ptr->isclient())
 						{
-							return false;
+							yield return true;
 						}
+					}
+					else
+					{
+						yield return true;
 
-						http_packet_data_ptr_->set_http_data_type() = http_packet_data::http_response_type;
-
-						while(true)
+						if (!l_tcp_packet_node_ptr->isclient())
 						{
-							boost::tie(valid_request_, boost::tuples::ignore) = http_response_parse_.parse(http_packet_data_ptr_->set_http_response(), l_tcp_packet_node_ptr->get_tcp_packet_data().begin(), l_tcp_packet_node_ptr->get_tcp_packet_data().end());
-
-							http_packet_data_ptr_->set_http_response().repares_status = valid_request_;
-
-							if (!valid_request_)
+							if (!http_packet_data_ptr_)
 							{
 								return false;
 							}
 
-							if (boost::indeterminate(valid_request_))
-							{
-								/*if (http_packet_data_ptr_->set_http_response().content.size() > content_max_cache)
-								{
-									notify_handler(l_tcp_packet_node_ptr, http_packet_data_ptr_);
-									http_packet_data_ptr_->set_http_response().content.clear();
-								}
-								else
-								{
-								}*/
-								yield return valid_request_;
-							}
+							http_packet_data_ptr_->set_http_data_type() = http_packet_data::http_response_type;
 
-							if (valid_request_)
+							while(true)
 							{
-								break;
+								boost::tie(valid_request_, boost::tuples::ignore) = http_response_parse_.parse(http_packet_data_ptr_->set_http_response(), l_tcp_packet_node_ptr->get_tcp_packet_data().begin(), l_tcp_packet_node_ptr->get_tcp_packet_data().end());
+
+								http_packet_data_ptr_->set_http_response().repares_status = valid_request_;
+
+								if (!valid_request_)
+								{
+									return false;
+								}
+
+								if (boost::indeterminate(valid_request_))
+								{
+									yield return valid_request_;
+								}
+
+								if (valid_request_)
+								{
+									break;
+								}
 							}
 						}
-					}
 
-					notify_handler(l_tcp_packet_node_ptr, http_packet_data_ptr_);
+						notify_handler(l_tcp_packet_node_ptr, http_packet_data_ptr_);
+					}
 
 					yield return true;
 				}
@@ -776,11 +783,12 @@ namespace xzh
 					continue;
 				}
 
-				if((*temp_)(l_tcp_packet_node_ptr, http_packet_data_ptr_))
+				bool bisfilter = true;
+				(*temp_)(l_tcp_packet_node_ptr, http_packet_data_ptr_, bisfilter);
+
+				if(!bretvalue && bisfilter)
 				{
-				}
-				else
-				{
+					bretvalue = true;
 				}
 			}
 

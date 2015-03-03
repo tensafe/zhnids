@@ -124,7 +124,7 @@ namespace xzh
 
 	public:
 		explicit xzhnids(size_t capacity)
-			:bounded_ip_packet_buffer_(capacity)
+			//:bounded_ip_packet_buffer_(capacity)
 		{
 
 		}
@@ -176,10 +176,10 @@ namespace xzh
 						thread_group_.create_thread(boost::bind(&xzhnids::pcapt_thread, this, strdevname, strfilter, pos->second, buffer_size, time_out));
 					}
 
-					for (int i = 0; i < consumer_size; i ++)
+					/*for (int i = 0; i < consumer_size; i ++)
 					{
 						thread_group_consumer_.create_thread(boost::bind(&xzhnids::inner_consumer_handler, this));
-					}
+					}*/
 
 				} while (false);
 
@@ -407,8 +407,29 @@ namespace xzh
 
 					l_ip_packet_node_pt->set_net_device() = l_netdevice_ptr;
 
-					bounded_ip_packet_buffer_.push_front(l_ip_packet_node_pt);
+					//bounded_ip_packet_buffer_.push_front(l_ip_packet_node_pt);
 
+					for (size_t index_ = 0; index_ < ipfragment_hub_.size(); index_ ++)
+					{
+						ipfragment_hub::return_type_ptr temp_ = ipfragment_hub_[index_];
+						if (!temp_)
+						{
+							continue;
+						}
+
+						try
+						{
+							if((*temp_)(l_ip_packet_node_pt, l_ip_packet_node_pt->get_packet_data().size(), l_ip_packet_node_pt->set_net_device()))
+							{
+							}
+							else
+							{
+							}
+						}
+						catch(...)
+						{
+						}
+					}
 					//{
 					//	//lock
 					//	boost::mutex::scoped_lock lock_(mutex_circular_);
@@ -423,7 +444,7 @@ namespace xzh
 			}
 		}
 
-		bool inner_consumer_handler()
+		/*bool inner_consumer_handler()
 		{
 			while(true)
 			{
@@ -454,7 +475,7 @@ namespace xzh
 			}
 			
 			return true;
-		}
+		}*/
 
 		static void pcap_handler (u_char *user, const struct pcap_pkthdr *pkt_header, const u_char *pkt_data)
 		{
@@ -543,9 +564,8 @@ namespace xzh
 		device_pcap_list device_pcap_list_;
 		boost::thread_group thread_group_;
 		ipfragment_hub ipfragment_hub_;
-		bounded_ip_packet_buffer bounded_ip_packet_buffer_;
-		boost::thread_group thread_group_consumer_;
-		boost::mutex mutex_circular_;
+		//bounded_ip_packet_buffer bounded_ip_packet_buffer_;
+		//boost::thread_group thread_group_consumer_;
 	};
 };
 #endif
