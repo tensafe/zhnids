@@ -765,7 +765,7 @@ namespace xzh
 						notify_handler(l_tcp_packet_node_ptr, http_packet_data_ptr_);
 					}
 
-					yield return true;
+					//yield return true;
 				}
 			}
 			return true;
