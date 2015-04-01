@@ -121,6 +121,12 @@ namespace xzh
 
 		typedef struct _user_data
 		{
+			_user_data()
+			{
+				innser_ptr = 0;
+				pcap_dump_ptr = NULL;
+				isdump = false;
+			}
 			unsigned long	innser_ptr;
 			netdevice_ptr	net_device_ptr;
 			pcap_dumper_t*  pcap_dump_ptr;
