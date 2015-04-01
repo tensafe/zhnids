@@ -389,19 +389,14 @@ namespace xzh
 
 							try
 							{
+								string test_chunk = "00000000";
+								std::copy(chunk_len.rbegin(), chunk_len.rend(), test_chunk.rbegin());
 								std::string strhex_value;
-								if (chunk_len.size() % 2 == 1)
-								{
-									chunk_len = "0" + chunk_len;
-								}
-								boost::algorithm::unhex(chunk_len.begin(), chunk_len.end(), inserter(strhex_value, strhex_value.end()));
+								boost::algorithm::unhex(test_chunk.begin(), test_chunk.end(), inserter(strhex_value, strhex_value.begin()));
 								content_length_ = 0;
 								memcpy(&content_length_, strhex_value.c_str(), min(strhex_value.size(), sizeof(int)));
 
-								if (chunk_len.size() == 4)
-								{
-									content_length_ = ntohs(content_length_);
-								}
+								content_length_ = ntohl(content_length_);
 							}
 							catch (...)
 							{
@@ -506,6 +501,11 @@ namespace xzh
 					// Space.
 					if (c != ' ') return false;
 					yield return boost::indeterminate;
+
+					while(c != 'H')
+					{
+						yield return boost::indeterminate;
+					}
 
 					// HTTP protocol identifier.
 					if (c != 'H') return false;
