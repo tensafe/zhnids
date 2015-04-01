@@ -13,7 +13,10 @@
 #include <boost/bind.hpp>
 #include <boost/thread/condition.hpp>
 #include <boost/thread/thread.hpp>
-#include <boost/bind.hpp>
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
+
 
 #include <zhnids/packet_header.hpp>
 #include <zhnids/stage/pcap_hub.hpp>
@@ -120,6 +123,8 @@ namespace xzh
 		{
 			unsigned long	innser_ptr;
 			netdevice_ptr	net_device_ptr;
+			pcap_dumper_t*  pcap_dump_ptr;
+			bool			isdump;
 		}user_data, *puser_data;
 
 	public:
@@ -129,7 +134,7 @@ namespace xzh
 
 		}
 
-		bool start(const string strfilter, int buffer_size = 10, int time_out = 0, int consumer_size = 1)
+		bool start(const string strfilter, int buffer_size = 10, int time_out = 0, int consumer_size = 1, bool isdump = false)
 		{
 			try
 			{
@@ -173,7 +178,7 @@ namespace xzh
 					for (device_list::iterator pos = device_list_.begin(); pos != device_list_.end(); pos ++)
 					{
 						string strdevname(pos->first);
-						thread_group_.create_thread(boost::bind(&xzhnids::pcapt_thread, this, strdevname, strfilter, pos->second, buffer_size, time_out));
+						thread_group_.create_thread(boost::bind(&xzhnids::pcapt_thread, this, strdevname, strfilter, pos->second, buffer_size, time_out, isdump));
 					}
 
 					/*for (int i = 0; i < consumer_size; i ++)
@@ -267,7 +272,7 @@ namespace xzh
 			return ipfragment_hub_.add_handler(strkey, callfun_);
 		}
 	public:
-		void pcapt_thread(string strpcap_name, string &strfilter, netdevice_ptr l_net_device_ptr, int buffer_size, int time_out)
+		void pcapt_thread(string strpcap_name, string &strfilter, netdevice_ptr l_net_device_ptr, int buffer_size, int time_out, bool isdump)
 		{
 			bool bisloop = true;
 
@@ -330,23 +335,40 @@ namespace xzh
 						device_pcap_list_.push_back(l_pcap_t);
 					}
 
+
+					pcap_dumper_t *dump_file = NULL;
+					if (isdump)
+					{
+						boost::uuids::uuid a_uuid = boost::uuids::random_generator()();
+						string strfullpath = boost::uuids::to_string(a_uuid) + ".pcap";
+						dump_file = pcap_dump_open(l_pcap_t, strfullpath.c_str());
+
+						if(dump_file == NULL)
+						{
+							debughelp::safe_debugstr(200, "pcap dump file error");
+						}
+					}
+
 					puser_data l_user_data = new user_data();
 
 					l_user_data->net_device_ptr = l_net_device_ptr;
 					l_user_data->innser_ptr = (unsigned long)this;
+					l_user_data->pcap_dump_ptr = dump_file;
+					l_user_data->isdump = isdump;
 					iret = pcap_loop(l_pcap_t, -1, xzhnids::pcap_handler, (u_char*)l_user_data);
 
 					delete l_user_data;
+
+					if (dump_file != NULL)
+					{
+						pcap_dump_close(dump_file);
+					}
+
 					if (l_pcap_t != NULL)
 					{
 						pcap_close(l_pcap_t);
-						/*boost::mutex::scoped_lock l_mutex(mutex_);
-						device_pcap_list::iterator pos_find = std::find(device_pcap_list_.begin(), device_pcap_list_.end(), l_pcap_t);
-						if (pos_find != device_pcap_list_.end())
-						{
-							device_pcap_list_.erase(pos_find);
-						}*/
 					}
+
 				} while (false);
 
 				if (iret != -2)
@@ -362,6 +384,7 @@ namespace xzh
 		}
 		void inner_handler_(const struct pcap_pkthdr *pkt_header, const u_char *pkt_data, netdevice_ptr l_netdevice_ptr)
 		{
+
 			try
 			{
 				do 
@@ -490,6 +513,11 @@ namespace xzh
 					}
 
 					puser_data l_user_data = (puser_data)user;
+
+					if (l_user_data->isdump)
+					{
+						pcap_dump((u_char*)l_user_data->pcap_dump_ptr, pkt_header, pkt_data);
+					}
 
 					xzhnids* xzhnids_ = (xzhnids*)l_user_data->innser_ptr;
 
