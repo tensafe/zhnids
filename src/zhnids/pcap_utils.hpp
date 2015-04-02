@@ -191,6 +191,7 @@ namespace xzh
 					{
 						thread_group_consumer_.create_thread(boost::bind(&xzhnids::inner_consumer_handler, this));
 					}*/
+					_sleep(2000);
 
 				} while (false);
 
@@ -223,6 +224,8 @@ namespace xzh
 				device_pcap_list_.clear();
 			}
 			thread_group_.interrupt_all();
+			thread_group_.join_all();
+
 			return true;
 		}
 
@@ -322,7 +325,7 @@ namespace xzh
 						netmask = l_net_device_ptr->get_netaddr_vector()[0].netmask;
 					}
 
-					int iret = pcap_compile(l_pcap_t, &fcode, strfilter.c_str(), 1, netmask);
+					iret = pcap_compile(l_pcap_t, &fcode, strfilter.c_str(), 1, netmask);
 					if (iret < 0)
 					{
 						debughelp::safe_debugstr(200, "pcap compile error:[%d][%s]", iret, strfilter.c_str());

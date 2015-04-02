@@ -605,11 +605,14 @@ namespace xzh
 							try
 							{
 								content_length_ = boost::lexical_cast<std::size_t>(req.headers[i].value);
+								break;
 							}
-							catch (boost::bad_lexical_cast&)
+							catch (boost::bad_lexical_cast& e)
 							{
 								return false;
 							}
+
+							break;
 						}
 					}
 
@@ -763,9 +766,8 @@ namespace xzh
 						}
 
 						notify_handler(l_tcp_packet_node_ptr, http_packet_data_ptr_);
+						yield return true;
 					}
-
-					yield return true;
 				}
 			}
 			return true;
