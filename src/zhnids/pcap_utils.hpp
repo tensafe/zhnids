@@ -525,7 +525,10 @@ namespace xzh
 
 					if (l_user_data->isdump)
 					{
-						pcap_dump((u_char*)l_user_data->pcap_dump_ptr, pkt_header, pkt_data);
+						if (l_user_data->pcap_dump_ptr != NULL)
+						{
+							pcap_dump((u_char*)l_user_data->pcap_dump_ptr, pkt_header, pkt_data);
+						}
 					}
 
 					xzhnids* xzhnids_ = (xzhnids*)l_user_data->innser_ptr;
