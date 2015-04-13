@@ -758,6 +758,11 @@ namespace xzh
 									yield return valid_request_;
 								}
 
+								if (l_tcp_packet_node_ptr->isclient())
+								{
+									break;
+								}
+
 								if (valid_request_)
 								{
 									break;
@@ -766,6 +771,7 @@ namespace xzh
 						}
 
 						notify_handler(l_tcp_packet_node_ptr, http_packet_data_ptr_);
+
 						yield return true;
 					}
 				}
