@@ -390,13 +390,20 @@ namespace xzh
 							try
 							{
 								string test_chunk = "00000000";
-								std::copy(chunk_len.rbegin(), chunk_len.rend(), test_chunk.rbegin());
-								std::string strhex_value;
-								boost::algorithm::unhex(test_chunk.begin(), test_chunk.end(), inserter(strhex_value, strhex_value.begin()));
-								content_length_ = 0;
-								memcpy(&content_length_, strhex_value.c_str(), min(strhex_value.size(), sizeof(int)));
+								if (test_chunk.size() >= chunk_len.size())
+								{
+									std::copy(chunk_len.rbegin(), chunk_len.rend(), test_chunk.rbegin());
+									std::string strhex_value;
+									boost::algorithm::unhex(test_chunk.begin(), test_chunk.end(), inserter(strhex_value, strhex_value.begin()));
+									content_length_ = 0;
+									memcpy(&content_length_, strhex_value.c_str(), min(strhex_value.size(), sizeof(int)));
 
-								content_length_ = ntohl(content_length_);
+									content_length_ = ntohl(content_length_);
+								}
+								else
+								{
+									content_length_ = 0;
+								}
 							}
 							catch (...)
 							{

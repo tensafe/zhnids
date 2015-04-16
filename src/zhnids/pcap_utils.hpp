@@ -311,11 +311,21 @@ namespace xzh
 						break;
 					}
 
-					iret = pcap_setbuff(l_pcap_t, (max(buffer_size, 1) * 1024 * 1024));
-					if (iret == -1)
+
+					for(int i_size = buffer_size; i_size > 1; i_size --)
 					{
-						debughelp::safe_debugstr(200, "set buffer error!");
+						iret = pcap_setbuff(l_pcap_t, (max(i_size, 1) * 1024 * 1024));
+						if (iret != -1)
+						{
+							debughelp::safe_debugstr(200, "set buffer [%d]mb ok!", i_size);
+							break;
+						}
+						else
+						{
+							debughelp::safe_debugstr(200, "set buffer [%d]mb error!", i_size);
+						}
 					}
+					
 
 					bpf_program fcode;
 
