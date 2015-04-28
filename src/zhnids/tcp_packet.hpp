@@ -482,7 +482,7 @@ namespace xzh
 				bretvalue = true;
 
 			} while (false);
-			return false;
+			return bretvalue;
 		}
 		template <typename TFun>
 		bool add_tcp_data_handler(string strkey, TFun callfun_)
