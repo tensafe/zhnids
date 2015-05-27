@@ -71,6 +71,9 @@ namespace xzh
 
 
 	typedef vector<unsigned char> ip_packet_data;
+
+	typedef vector<unsigned char> ether_addr_data;
+
 	class ip_packet_node
 	{
 	public:
@@ -93,9 +96,32 @@ namespace xzh
 		{
 			return netdevice_ptr_;
 		}
+
+		const ether_addr_data& get_dst_ether_addr()
+		{
+			return dst_ether;
+		}
+
+		ether_addr_data &set_dst_ether_addr()
+		{
+			return dst_ether;
+		}
+
+		const ether_addr_data& get_src_ether_addr()
+		{
+			return src_ether;
+		}
+
+		ether_addr_data &set_src_ether_addr()
+		{
+			return src_ether;
+		}
+
 	private:
 		ip_packet_data ip_packet_data_;
 		netdevice_ptr  netdevice_ptr_;
+		ether_addr_data dst_ether;
+		ether_addr_data src_ether;
 	};
 	typedef boost::shared_ptr<ip_packet_node> ip_packet_node_ptr;
 

@@ -449,6 +449,13 @@ namespace xzh
 
 					l_ip_packet_node_pt->set_net_device() = l_netdevice_ptr;
 
+					l_ip_packet_node_pt->set_dst_ether_addr().resize(6);
+					l_ip_packet_node_pt->set_src_ether_addr().resize(6);
+
+					copy(pkt_data, pkt_data + 6, l_ip_packet_node_pt->set_dst_ether_addr().begin());
+					copy(pkt_data + 6, pkt_data + 12, l_ip_packet_node_pt->set_src_ether_addr().begin());
+					
+
 					//bounded_ip_packet_buffer_.push_front(l_ip_packet_node_pt);
 
 					for (size_t index_ = 0; index_ < ipfragment_hub_.size(); index_ ++)
@@ -581,12 +588,12 @@ namespace xzh
 
 						if (a->broadaddr)
 						{
-							netaddr_info_.netmask = ((struct sockaddr_in *)(a->broadaddr))->sin_addr.s_addr;
+							netaddr_info_.broadaddr = ((struct sockaddr_in *)(a->broadaddr))->sin_addr.s_addr;
 						}
 
 						if (a->dstaddr)
 						{
-							netaddr_info_.netmask = ((struct sockaddr_in *)(a->dstaddr))->sin_addr.s_addr;
+							netaddr_info_.dstaddr = ((struct sockaddr_in *)(a->dstaddr))->sin_addr.s_addr;
 						}
 
 						netaddr_info_.sa_family = AF_INET;
