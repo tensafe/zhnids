@@ -5,6 +5,10 @@
 #include <string>
 #include <boost/range.hpp>
 
+#ifdef HAVE_LIBNET
+#include <libnet.h>
+#endif
+
 #include <boost/functional/hash.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/logic/tribool.hpp>
@@ -35,6 +39,11 @@ namespace xzh
 	public:
 		typedef vector<netaddr_info> netaddr_vector;
 	public:
+		netdevice()
+			:l(NULL)
+		{
+
+		}
 		string& set_device_name()
 		{
 			return device_name;
@@ -62,15 +71,53 @@ namespace xzh
 		{
 			return isloopback;
 		}
+#ifdef HAVE_LIBNET
+		bool init_libnet()
+		{
+			bool bretvalue = false;
+
+			l = libnet_init(
+				LIBNET_LINK,
+				device_name.c_str(), 
+				NULL);
+
+			if (l == NULL)
+			{
+				bretvalue = false;
+			}
+			else 
+			{
+				bretvalue = true;
+			}
+
+			return bretvalue;
+		}
+
+		bool destroy_libnet()
+		{
+			libnet_destroy(l);
+			return true;
+		}
+
+		libnet_t *get_libnet()
+		{
+			return l;
+		}
+#endif
+
 	private:
 		netaddr_vector netaddr_vector_;
 		string device_name;
-		bool isloopback;		
+		bool isloopback;	
+#ifdef HAVE_LIBNET
+		libnet_t *l;
+#endif
 	};
 	typedef boost::shared_ptr<netdevice> netdevice_ptr;
 
-
 	typedef vector<unsigned char> ip_packet_data;
+
+	typedef vector<unsigned char> pppoe_packet_data;
 
 	typedef vector<unsigned char> ether_addr_data;
 
@@ -117,11 +164,22 @@ namespace xzh
 			return src_ether;
 		}
 
+		const pppoe_packet_data &get_pppoe_packet_data()
+		{
+			return pppoe_packet_data_;
+		}
+
+		pppoe_packet_data &set_pppoe_packet_data()
+		{
+			return pppoe_packet_data_;
+		}
+
 	private:
 		ip_packet_data ip_packet_data_;
 		netdevice_ptr  netdevice_ptr_;
 		ether_addr_data dst_ether;
 		ether_addr_data src_ether;
+		pppoe_packet_data pppoe_packet_data_;
 	};
 	typedef boost::shared_ptr<ip_packet_node> ip_packet_node_ptr;
 

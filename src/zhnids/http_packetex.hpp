@@ -8,100 +8,6 @@
 
 namespace xzh
 {
-	//struct header
-	//{
-	//	std::string name;
-	//	std::string value;
-	//};
-
-	//struct http_request
-	//{
-	//	/// The request method, e.g. "GET", "POST".
-	//	std::string method;
-
-	//	/// The requested URI, such as a path to a file.
-	//	std::string uri;
-
-	//	/// Major version number, usually 1.
-	//	int http_version_major;
-
-	//	/// Minor version number, usually 0 or 1.
-	//	int http_version_minor;
-
-	//	/// The headers included with the request.
-	//	std::vector<header> headers;
-
-	//	/// The optional content sent with the request.
-	//	std::string content;
-	//};
-
-
-	//struct http_response
-	//{
-	//	/// return status code
-	//	int status_code;
-	//	/// OK ....
-	//	string status;
-
-	//	/// Major version number, usually 1.
-	//	int http_version_major;
-
-	//	/// Minor version number, usually 0 or 1.
-	//	int http_version_minor;
-
-	//	/// The headers included with the request.
-	//	std::vector<header> headers;
-
-	//	/// The optional content sent with the request.
-	//	std::string content;
-	//};
-
-	//class http_packet_data
-	//{
-	//public:
-	//	enum http_packet_type
-	//	{
-	//		http_request_type = 0,
-	//		http_response_type,
-	//	};
-	//public:
-	//	const http_response &get_http_response()
-	//	{
-	//		return http_response_;
-	//	}
-
-	//	http_response &set_http_response()
-	//	{
-	//		return http_response_;
-	//	}
-
-	//	const http_request &get_http_request()
-	//	{
-	//		return http_request_;
-	//	}
-
-	//	http_request &set_http_request()
-	//	{
-	//		return http_request_;
-	//	}
-
-	//	const int &get_http_data_type()
-	//	{
-	//		return http_data_type_;
-	//	}
-
-	//	int &set_http_data_type()
-	//	{
-	//		return http_data_type_;
-	//	}
-	//private:
-	//	int http_data_type_;
-	//	http_response http_response_;
-	//	http_request  http_request_;
-	//};
-
-	//typedef boost::shared_ptr<http_packet_data> http_packet_data_ptr;
-
 	typedef pcap_hub_impl<string, bool (tcp_packet_node_ptr, http_packet_data_ptr, bool &)> http_packet_data_hub;
 	typedef pcap_hub_impl<string, bool (tcp_packet_node_ptr, http_packet_data_ptr, bool &)> http_packet_filter_hub_ex;
 	typedef pcap_hub_impl<string, bool (tcp_packet_node_ptr, bool &)> http_packet_filter_hub;
@@ -194,7 +100,7 @@ namespace xzh
 
 				if (http_parser_err != HPE_OK)
 				{
-					debughelp::safe_debugstr(250, "http_parser error:%s",http_errno_description((http_errno)http_parser_err));
+					//debughelp::safe_debugstr(250, "http_parser error:%s",http_errno_description((http_errno)http_parser_err));
 					bretvalue = false;
 				}
 				else

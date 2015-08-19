@@ -23,6 +23,8 @@
 #include <zhnids/stage/outdebug.hpp>
 #include <boost/thread/detail/thread.hpp>
 
+
+
 using namespace std;
 
 namespace xzh
@@ -311,7 +313,6 @@ namespace xzh
 						break;
 					}
 
-
 					for(int i_size = buffer_size; i_size > 1; i_size --)
 					{
 						iret = pcap_setbuff(l_pcap_t, (max(i_size, 1) * 1024 * 1024));
@@ -368,13 +369,21 @@ namespace xzh
 						}
 					}
 
+#ifdef HAVE_LIBNET
+					l_net_device_ptr->init_libnet();
+#endif
+
 					puser_data l_user_data = new user_data();
 
 					l_user_data->net_device_ptr = l_net_device_ptr;
 					l_user_data->innser_ptr = (unsigned long)this;
 					l_user_data->pcap_dump_ptr = dump_file;
 					l_user_data->isdump = isdump;
+
+
 					iret = pcap_loop(l_pcap_t, -1, xzhnids::pcap_handler, (u_char*)l_user_data);
+
+					l_net_device_ptr->destroy_libnet();
 
 					delete l_user_data;
 
@@ -426,37 +435,64 @@ namespace xzh
 						break;
 					}
 
-					if(pkt_data[12] != 8 && pkt_data[13] != 0)
-					{
-						//debughelp::safe_debugstr(200, "12 not 8 13 not 0");
-						break;
-					}
-
-					int idatalen = pkt_header->caplen - 14;
-
 					ip_packet_node_ptr l_ip_packet_node_pt = ip_packet_node_ptr(new ip_packet_node());
 
-					l_ip_packet_node_pt->set_packet_data().resize(idatalen);
-				
-					//memcpy(&data_vector[0], (char*)(pkt_data + 14), idatalen);
-					copy(pkt_data + 14, pkt_data + pkt_header->caplen, l_ip_packet_node_pt->set_packet_data().begin());
-
-					if (l_ip_packet_node_pt->set_packet_data().empty())
+					if(pkt_data[12] == 8 && pkt_data[13] == 0)
 					{
-						debughelp::safe_debugstr(200, "copy data error, len: %d", idatalen);
+						int idatalen = pkt_header->caplen - 14;
+						l_ip_packet_node_pt->set_packet_data().resize(idatalen);
+						copy(pkt_data + 14, pkt_data + pkt_header->caplen, l_ip_packet_node_pt->set_packet_data().begin());
+						if (l_ip_packet_node_pt->set_packet_data().empty())
+						{
+							debughelp::safe_debugstr(200, "copy data error, len: %d", idatalen);
+							break;
+						}
+
+						l_ip_packet_node_pt->set_net_device() = l_netdevice_ptr;
+						l_ip_packet_node_pt->set_dst_ether_addr().resize(6);
+						l_ip_packet_node_pt->set_src_ether_addr().resize(6);
+
+						copy(pkt_data, pkt_data + 6, l_ip_packet_node_pt->set_dst_ether_addr().begin());
+						copy(pkt_data + 6, pkt_data + 12, l_ip_packet_node_pt->set_src_ether_addr().begin());
+
+					}
+					else if(pkt_data[12] == 0x88 && pkt_data[13] == 0x64)
+					{
+						if (pkt_header->caplen < 21)
+						{
+							break;
+						}
+
+						if (pkt_data[20] == 0x00 && pkt_data[21] == 0x21)
+						{
+							int idatalen = pkt_header->caplen - 14 - 8;
+							l_ip_packet_node_pt->set_packet_data().resize(idatalen);
+							copy(pkt_data + 14 + 8, pkt_data + pkt_header->caplen, l_ip_packet_node_pt->set_packet_data().begin());
+							if (l_ip_packet_node_pt->set_packet_data().empty())
+							{
+								debughelp::safe_debugstr(200, "copy data error, len: %d", idatalen);
+								break;
+							}
+
+							l_ip_packet_node_pt->set_net_device() = l_netdevice_ptr;
+							l_ip_packet_node_pt->set_dst_ether_addr().resize(6);
+							l_ip_packet_node_pt->set_src_ether_addr().resize(6);
+							l_ip_packet_node_pt->set_pppoe_packet_data().resize(8);
+
+							copy(pkt_data, pkt_data + 6, l_ip_packet_node_pt->set_dst_ether_addr().begin());
+							copy(pkt_data + 6, pkt_data + 12, l_ip_packet_node_pt->set_src_ether_addr().begin());
+
+							copy(pkt_data + 12, pkt_data + 20, l_ip_packet_node_pt->set_pppoe_packet_data().begin());
+						}
+						else
+						{
+							break;
+						}
+					}
+					else
+					{
 						break;
 					}
-
-					l_ip_packet_node_pt->set_net_device() = l_netdevice_ptr;
-
-					l_ip_packet_node_pt->set_dst_ether_addr().resize(6);
-					l_ip_packet_node_pt->set_src_ether_addr().resize(6);
-
-					copy(pkt_data, pkt_data + 6, l_ip_packet_node_pt->set_dst_ether_addr().begin());
-					copy(pkt_data + 6, pkt_data + 12, l_ip_packet_node_pt->set_src_ether_addr().begin());
-					
-
-					//bounded_ip_packet_buffer_.push_front(l_ip_packet_node_pt);
 
 					for (size_t index_ = 0; index_ < ipfragment_hub_.size(); index_ ++)
 					{
